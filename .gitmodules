@@ -1,0 +1,6 @@
+[submodule "stack"]
+	path = stack
+	url = https://github.com/I1Va/stack.git
+[submodule "graphviz_funcs"]
+	path = graphviz_funcs
+	url = https://github.com/I1Va/graphviz_funcs.git

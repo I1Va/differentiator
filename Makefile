@@ -90,7 +90,7 @@ SRC = ./src
 #/---------------------------PROJECT_SRC_CONFIG--------------------\#
 
 #/---------------------------SUBMODULES_CONFIG--------------------\#
-SUBMODULES = stack graphviz_funcs
+SUBMODULES = stack graphviz_funcs string_funcs
 #/---------------------------SUBMODULES_CONFIG--------------------\#
 
 

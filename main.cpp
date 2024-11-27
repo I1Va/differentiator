@@ -8,6 +8,7 @@
 #include "stack_funcs.h"
 #include "diff_funcs.h"
 #include "string_funcs.h"
+#include "diff_grammar.h"
 
 const char DOT_DIR_PATH[] = "./logs";
 const char LOG_FILE_PATH[] = "./logs/log.html";
@@ -58,7 +59,7 @@ void test1_manualy_create_tree(bin_tree_t *tree, dot_code_t *dot_code) {
     dot_code->edge_list[edge4].pars.start_suf = "R";
 }
 
-int main() {
+void test2_read_tree_from_file() {
     bin_tree_t tree = {};
     bin_tree_ctor(&tree, LOG_FILE_PATH);
     dot_dir_t dot_dir = {};
@@ -89,6 +90,17 @@ int main() {
     bin_tree_dtor(&tree);
     FREE(text.str_ptr)
     str_storage_t_dtor(storage);
+}
+int main() {
+    // str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
+    str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
+    remove_chars_from_text(&text, " \n");
+    printf("text : '%s'\n", text.str_ptr);
 
+    parsing_block_t data = {0, text.str_ptr};
+
+    printf("G: %d\n", GetG(&data));
+
+    FREE(text.str_ptr)
     return 0;
 }

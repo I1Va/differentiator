@@ -82,7 +82,7 @@ override CFLAGS += $(COMMONINC) # CFLAGS - environment variable. We can change i
 
 #/---------------------------PROJECT_SRC_CONFIG--------------------\#
 PROJECT_NAME = differentiator
-CSRC = main.cpp src/diff_tree.cpp
+CSRC = main.cpp src/diff_tree.cpp src/diff_grammar.cpp src/diff_funcs.cpp
 LOGS_DIR = ./logs
 OUT_O_DIR = build
 COMMONINC = -I./inc

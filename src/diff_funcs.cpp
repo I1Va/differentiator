@@ -1,5 +1,6 @@
-#include "diff_funcs.h"
+
 #include "diff_tree.h"
+#include "diff_funcs.h"
 #include "string_funcs.h"
 
 #include <stdlib.h>

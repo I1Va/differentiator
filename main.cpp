@@ -124,18 +124,21 @@ int main() {
     bin_tree_t tree = {};
     bin_tree_ctor(&tree, LOG_FILE_PATH);
 
-    remove_chars_from_text(&text, " \n");
     printf("text : '%s'\n", text.str_ptr);
 
+
+
     parsing_block_t data = {0, text.str_ptr, &tree, &dot_code, &storage};
+    lex_scanner(text.str_ptr, text.len, &data);
+
     // draw_parsing_text(&data);
 
-    tree.root = get_G(&data);
-    convert_tree_to_dot(tree.root, &dot_code, &storage);
+    // tree.root = get_G(&data);
+    // convert_tree_to_dot(tree.root, &dot_code, &storage);
 
     // printf("G: %d\n", get_G(&data));
 
-    dot_code_render(&dot_dir, &dot_code);
+    // dot_code_render(&dot_dir, &dot_code);
 
     FREE(text.str_ptr)
     str_storage_t_dtor(storage);

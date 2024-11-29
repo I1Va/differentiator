@@ -16,71 +16,100 @@
 // }
 
 #define SyntaxError(p) {debug("SyntaxError: p=%d", p); fprintf(stderr, WHT); abort();}
+#define ScannerError(p, c) {debug("ScannerError: text[%d] : '%c'", p, c); fprintf(stderr, WHT); abort();}
 
-enum lexemtype{
-    LEX_ID = 0,
-    LEX_NUM = 1,
-    LEX_ADD = 2,
-    LEX_MUL = 3,
-    LEX_SUB = 4,
-};
+bool char_in_str_lex(int c) {
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
+}
 
-union token_value_t {
-    int ival;
-    long double dval;
-    char *sval;
-};
+token_t next_token(char *text, size_t *p, parsing_block_t *data) {
+    int c = text[(*p)++];
+    long long lval = 0;
+    char bufer[MEDIUM_BUFER_SZ] = {};
+    size_t bufer_idx = 0;
+    char *str = NULL;
 
-struct token_t {
-    enum lexemtype token_type;
-    union token_value_t token_val;
-};
+    token_t token = {};
 
-// void lex_scanner(char *text, const size_t len) {
-//     const size_t TOKEN_LIST_MX_SZ = 256;
-//     token_t token_list[TOKEN_LIST_MX_SZ];
-//     size_t token_idx = 0;
+    if (isdigit(c)) {
+        token.token_type = LEX_NUM;
 
-//     size_t p = 0;
-//     while(1) {
-//         int c = text[p++];
-//         if(isdigit(c)) {
-//             int val = c - '0';
-//             while(isdigit(c = text[p++]))
-//                 val = (10 * val) + c - '0';
-//             token_list[token_idx].token_type = LEX_NUM;
-//             token_list[token_idx].token_val.ival = val;
-//         }
-//     }
+        while (isdigit(c)) {
+            lval = 10 * lval + c - '0';
+            c = text[(*p)++];
+        }
+        (*p)--;
 
+        token.token_val.lval = lval;
+        return token;
+    }
 
-//     // if(c == EOF) seeneof = 1;
-//     // else ungetc(c, yyin);
-//     // return NUMBER;
-//     // }
-//     // switch(c) {
-//     // case '+': return ADD; case '-': return SUB;
-//     // case '*': return MUL; case '|': return ABS;
-//     // case '(': return OP; case ')': return CP;
-//     // case '\n': return EOL;
-//     // case ' ': case '\t': break; /* ignore these */
-//     // case EOF: return 0; /* standard end-of-file token */
-//     // case '/': c = getc(yyin);
-//     // if(c == '/') { /* it's a comment */
-//     // while((c = getc(yyin)) != '\n')
-//     // if(c == EOF) return 0; /* EOF in comment line */
-//     // break;
-//     // }
-//     // if(c == EOF) seeneof = 1; /* it's division */
-//     // else ungetc(c, yyin);
-//     // return DIV;
-//     // default: yyerror("Mystery character %c\n", c); break
+    if (char_in_str_lex(c)) {
+        token.token_type = LEX_STR;
+        while (char_in_str_lex(c)) {
+            bufer[bufer_idx++] = (char) c;
+            c = text[(*p)++];
+        }
 
-//     // }
+        str = get_new_str_ptr(data->storage, bufer_idx);
+        strncpy(str, bufer, bufer_idx);
 
-// }
+        token.token_val.sval = str;
+        return token;
+    }
+    switch (c) {
+        case '+': return {LEX_ADD}; case '-': return {LEX_SUB};
+        case '*': return {LEX_MUL};
+        case '(': return {LEX_OBRACE}; case ')': return {LEX_CBRACE};
+        case '\n': return {LEX_EOL};
+        case ' ': return {LEX_SPACE};
+        case '\t': return {LEX_SPACE};
+        case EOF: return {LEX_EOF};
+        case '\0': return {LEX_EOF};
+        default: ScannerError(*p, text[*p])
+    }
+    return {LEX_EOF};
+}
 
+void token_list_dump(FILE *stream, token_t *token_list, const size_t len) {
+    #define LEX_DESCR_(stream, lex, fmt, val) case lex: fprintf(stream, #lex"(" fmt ") ", val); break;
 
+    for (size_t i = 0; i < len; i++) {
+        switch (token_list[i].token_type) {
+            LEX_DESCR_(stream, LEX_ADD, "%c", '+')
+            LEX_DESCR_(stream, LEX_EOF, "%s", "")
+            LEX_DESCR_(stream, LEX_NUM, "%Ld", token_list[i].token_val.lval)
+            LEX_DESCR_(stream, LEX_MUL, "%c", '*')
+            LEX_DESCR_(stream, LEX_SUB, "%c", '-')
+            LEX_DESCR_(stream, LEX_OBRACE, "%c", '(')
+            LEX_DESCR_(stream, LEX_CBRACE, "%c", ')')
+            LEX_DESCR_(stream, LEX_EOL, "%s", "\\n")
+            LEX_DESCR_(stream, LEX_STR, "%s", token_list[i].token_val.sval)
+            LEX_DESCR_(stream, LEX_SPACE, "%c", ' ')
+            default: fprintf(stream, "UNKNOWN_LEX(%d) ", token_list[i].token_type); break;
+        }
+    }
+    fprintf(stream, "\n");
+
+    #undef LEX_DESCR_
+}
+
+void lex_scanner(char *text, const size_t len, parsing_block_t *data) {
+    const size_t TOKEN_LIST_MX_SZ = 256;
+    token_t token_list[TOKEN_LIST_MX_SZ];
+    size_t token_idx = 0;
+    size_t text_idx = 0;
+
+    while (1) {
+        token_t token = next_token(text, &text_idx, data);
+        token_list[token_idx++] = token;
+        if (token.token_type == LEX_EOF) {
+            break;
+        }
+    }
+
+    token_list_dump(stdout, token_list, token_idx);
+}
 
 
 

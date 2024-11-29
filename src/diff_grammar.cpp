@@ -24,7 +24,7 @@ bool char_in_str_lex(int c) {
 
 token_t next_token(parsing_block_t *data) {
     char *s = data->s;
-    int *p = &data->p;
+    int *p = &data->sp;
 
     int c = data->s[(*p)++];
     long long lval = 0;
@@ -107,7 +107,9 @@ void lex_scanner(parsing_block_t *data) {
 
     while (1) {
         token_t token = next_token(data);
-        data->token_list[token_idx++] = token;
+        if (token.token_type != LEX_SPACE) {
+            data->token_list[token_idx++] = token;
+        }
         if (token.token_type == LEX_EOF) {
             break;
         }
@@ -120,29 +122,30 @@ void lex_scanner(parsing_block_t *data) {
 bin_tree_elem_t *get_G(parsing_block_t *data) {
     assert(data != NULL);
 
-    char *s = data->s;
-    int *p = &(data->p);
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
     bin_tree_elem_t *val = get_E(data);
 
-    if (s[*p] != '\0') {
-        SyntaxError(*p);
+    if (tl[*tp].token_type != LEX_EOF) {
+        SyntaxError(*tp);
     }
-    (*p)++;
+    (*tp)++;
     return val;
 }
 
 bin_tree_elem_t *get_E(parsing_block_t *data) {
     assert(data != NULL);
 
-    char *s = data->s;
-    int *p = &(data->p);
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
+
     bin_tree_elem_t *val = get_T(data);
-    while (s[*p] == '+' || s[*p] == '-') {
-        int op = s[*p];
-        (*p)++;
+    while (tl[*tp].token_type == LEX_ADD || tl[*tp].token_type == LEX_SUB) {
+        lexemtype op = tl[*tp].token_type;
+        (*tp)++;
         bin_tree_elem_t * val2 = get_T(data);
 
-        if (op == '+') {
+        if (op == LEX_ADD) {
             val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
             val->data.value.ival = ADD;
         } else {
@@ -158,21 +161,22 @@ bin_tree_elem_t *get_E(parsing_block_t *data) {
 bin_tree_elem_t *get_T(parsing_block_t *data) {
     assert(data != NULL);
 
-    char *s = data->s;
-    int *p = &(data->p);
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
     bin_tree_elem_t *val = get_P(data);
 
-    while (s[*p] == '*' || s[*p] == '/') {
-        int op = s[*p];
-        (*p)++;
+    while (tl[*tp].token_type == LEX_MUL || tl[*tp].token_type == LEX_DIV) {
+        lexemtype op = tl[*tp].token_type;
+        (*tp)++;
         bin_tree_elem_t *val2 = get_P(data);
-        if (op == '*') {
+        if (op == LEX_MUL) {
             val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
             val->data.value.ival = MUL;
         } else {
             val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
             val->data.value.ival = DIV;
         }
+        printf("type: (%d)\n", tl[*tp].token_type);
     }
 
     return val;
@@ -181,18 +185,18 @@ bin_tree_elem_t *get_T(parsing_block_t *data) {
 bin_tree_elem_t *get_P(parsing_block_t *data) {
     assert(data != NULL);
 
-    char *s = data->s;
-    int *p = &(data->p);
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
 
-    if (s[*p] == '(') {
-        (*p)++;
+    if (tl[*tp].token_type == LEX_OBRACE) {
+        (*tp)++;
         bin_tree_elem_t *val = get_E(data);
-        if (s[*p] != ')') {
-            SyntaxError(*p);
+        if (tl[*tp].token_type != LEX_CBRACE) {
+            SyntaxError(*tp);
         }
-        (*p)++;
+        (*tp)++;
         return val;
-    } else if (s[*p] == 'x') {
+    } else if (tl[*tp].token_type == LEX_STR && strcmp(tl[*tp].token_val.sval, "x") == 0) {
         return get_V(data);
     } else {
         return get_N(data);
@@ -202,18 +206,15 @@ bin_tree_elem_t *get_P(parsing_block_t *data) {
 bin_tree_elem_t *get_N(parsing_block_t *data) {
     assert(data != NULL);
 
-    char *s = data->s;
-    int *p = &(data->p);
-    int old_p = *p;
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
 
     int val = 0;
-    while ('0' <= s[*p] && s[*p] <= '9') {
-        val = val * 10 + s[*p] - '0';
-        (*p)++;
+    if (tl[*tp].token_type != LEX_NUM) {
+        SyntaxError(*tp);
     }
-    if (old_p == *p) {
-        SyntaxError(*p);
-    }
+    (*tp)++;
+
     bin_tree_elem_t *node = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {NUM});
     node->data.value.ival = val;
     return node;
@@ -232,7 +233,7 @@ bin_tree_elem_t *get_N(parsing_block_t *data) {
 //         (*p)++;
 //     }
 //     if (old_p == *p) {
-//         SyntaxError(*p);
+//         SyntaxError(*tp);
 //     }
 
 //     return val;
@@ -241,13 +242,13 @@ bin_tree_elem_t *get_N(parsing_block_t *data) {
 bin_tree_elem_t *get_V(parsing_block_t *data) {
     assert(data != NULL);
 
-    char *s = data->s;
-    int *p = &(data->p);
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
 
-    if (s[*p] != 'x') {
-        SyntaxError(*p);
+    if (tl[*tp].token_type != LEX_STR && strcmp(tl[*tp].token_val.sval, "x") != 0) {
+        SyntaxError(*tp);
     }
-    (*p)++;
+    (*tp)++;
 
     bin_tree_elem_t *res = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {VAR});
     res->data.value.ival = 0;

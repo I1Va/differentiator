@@ -105,17 +105,17 @@ int main() {
 
     token_t token_list[TOKEN_LIST_MAX_SZ] = {};
 
-    parsing_block_t data = {0, text.str_ptr, token_list, &tree, &dot_code, &storage};
+    parsing_block_t data = {0, text.str_ptr, 0, token_list, &tree, &dot_code, &storage};
     lex_scanner(&data);
 
     // draw_parsing_text(&data);
 
-    // tree.root = get_G(&data);
-    // convert_tree_to_dot(tree.root, &dot_code, &storage);
+    tree.root = get_G(&data);
+    convert_tree_to_dot(tree.root, &dot_code, &storage);
 
     // printf("G: %d\n", get_G(&data));
 
-    // dot_code_render(&dot_dir, &dot_code);
+    dot_code_render(&dot_dir, &dot_code);
 
     FREE(text.str_ptr)
     str_storage_t_dtor(storage);

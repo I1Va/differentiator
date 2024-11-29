@@ -34,10 +34,13 @@ struct token_t {
 };
 
 struct parsing_block_t {
-    int p;
-
+    int sp;
     char *s;
+
+    int tp;
     token_t *token_list;
+
+
     bin_tree_t *tree;
     dot_code_t *dot_code;
     str_storage_t ** storage;

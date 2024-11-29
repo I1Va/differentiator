@@ -15,7 +15,7 @@ const size_t VALID_OPERATIONS_CNT = strlen(VALID_OPERATIONS);
 
 const size_t MINI_BUFER_SZ = 16;
 const size_t MEDIUM_BUFER_SZ = 128;
-const size_t CHUNK_SIZE = 256;
+const size_t CHUNK_SIZE = 2048;
 const size_t MAX_NODE_WRAP_SZ = 64;
 
 

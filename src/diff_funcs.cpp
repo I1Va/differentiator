@@ -138,8 +138,10 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
     }
 
     char *left_son_start = left + 1;
-    char *left_son_end = get_end_bracket_ptr(left_son_start, right);
+    // if (*left_son_start == )
+    printf("left_son_start : '%c'", *left_son_start);
 
+    char *left_son_end = get_end_bracket_ptr(left_son_start, right);
     char *node_end_ptr = get_string_untill_bracket(left_son_end + 1, right, bufer);
 
     char *right_son_start = node_end_ptr;

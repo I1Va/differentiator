@@ -22,8 +22,11 @@ bool char_in_str_lex(int c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
 }
 
-token_t next_token(char *text, size_t *p, parsing_block_t *data) {
-    int c = text[(*p)++];
+token_t next_token(parsing_block_t *data) {
+    char *s = data->s;
+    int *p = &data->p;
+
+    int c = data->s[(*p)++];
     long long lval = 0;
     char bufer[MEDIUM_BUFER_SZ] = {};
     size_t bufer_idx = 0;
@@ -36,7 +39,7 @@ token_t next_token(char *text, size_t *p, parsing_block_t *data) {
 
         while (isdigit(c)) {
             lval = 10 * lval + c - '0';
-            c = text[(*p)++];
+            c = s[(*p)++];
         }
         (*p)--;
 
@@ -48,8 +51,9 @@ token_t next_token(char *text, size_t *p, parsing_block_t *data) {
         token.token_type = LEX_STR;
         while (char_in_str_lex(c)) {
             bufer[bufer_idx++] = (char) c;
-            c = text[(*p)++];
+            c = s[(*p)++];
         }
+        (*p)--;
 
         str = get_new_str_ptr(data->storage, bufer_idx);
         strncpy(str, bufer, bufer_idx);
@@ -57,16 +61,18 @@ token_t next_token(char *text, size_t *p, parsing_block_t *data) {
         token.token_val.sval = str;
         return token;
     }
+
     switch (c) {
         case '+': return {LEX_ADD}; case '-': return {LEX_SUB};
         case '*': return {LEX_MUL};
         case '(': return {LEX_OBRACE}; case ')': return {LEX_CBRACE};
         case '\n': return {LEX_EOL};
         case ' ': return {LEX_SPACE};
+        case '/': return {LEX_DIV};
         case '\t': return {LEX_SPACE};
         case EOF: return {LEX_EOF};
         case '\0': return {LEX_EOF};
-        default: ScannerError(*p, text[*p])
+        default: ScannerError(*p, s[*p])
     }
     return {LEX_EOF};
 }
@@ -94,24 +100,21 @@ void token_list_dump(FILE *stream, token_t *token_list, const size_t len) {
     #undef LEX_DESCR_
 }
 
-void lex_scanner(char *text, const size_t len, parsing_block_t *data) {
-    const size_t TOKEN_LIST_MX_SZ = 256;
-    token_t token_list[TOKEN_LIST_MX_SZ];
+void lex_scanner(parsing_block_t *data) {
+    assert(data != NULL);
+
     size_t token_idx = 0;
-    size_t text_idx = 0;
 
     while (1) {
-        token_t token = next_token(text, &text_idx, data);
-        token_list[token_idx++] = token;
+        token_t token = next_token(data);
+        data->token_list[token_idx++] = token;
         if (token.token_type == LEX_EOF) {
             break;
         }
     }
 
-    token_list_dump(stdout, token_list, token_idx);
+    token_list_dump(stdout, data->token_list, token_idx);
 }
-
-
 
 
 bin_tree_elem_t *get_G(parsing_block_t *data) {

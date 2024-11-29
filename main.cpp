@@ -92,30 +92,6 @@ void test2_read_tree_from_file() {
     str_storage_t_dtor(storage);
 }
 
-void test() {
-    str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
-    str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
-    dot_dir_t dot_dir = {}; dot_dir_ctor(&dot_dir, DOT_DIR_PATH, DOT_FILE_NAME, DOT_IMG_NAME);
-    dot_code_t dot_code = {}; dot_code_t_ctor(&dot_code, LIST_DOT_CODE_PARS);
-    bin_tree_t tree = {};
-    bin_tree_ctor(&tree, LOG_FILE_PATH);
-
-    remove_chars_from_text(&text, " \n");
-    printf("text : '%s'\n", text.str_ptr);
-
-    parsing_block_t data = {0, text.str_ptr, &tree, &dot_code, &storage};
-    // draw_parsing_text(&data);
-
-    // printf("G: %d\n", get_G(&data));
-
-    dot_code_render(&dot_dir, &dot_code);
-
-    // FREE(text.str_ptr)
-    // str_storage_t_dtor(storage);
-    // dot_dir_dtor(&dot_dir);
-    // dot_code_t_dtor(&dot_code);
-}
-
 int main() {
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
     str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
@@ -127,9 +103,10 @@ int main() {
     printf("text : '%s'\n", text.str_ptr);
 
 
+    token_t token_list[TOKEN_LIST_MAX_SZ] = {};
 
-    parsing_block_t data = {0, text.str_ptr, &tree, &dot_code, &storage};
-    lex_scanner(text.str_ptr, text.len, &data);
+    parsing_block_t data = {0, text.str_ptr, token_list, &tree, &dot_code, &storage};
+    lex_scanner(&data);
 
     // draw_parsing_text(&data);
 

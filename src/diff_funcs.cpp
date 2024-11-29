@@ -44,9 +44,12 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
     } else if (node->data.type == NUM) {
         snprintf(bufer, BUFSIZ, "%d", node->data.value.ival);
     } else if (node->data.type == VAR) {
-
         snprintf(bufer, BUFSIZ, "X%d", node->data.value.ival);
-    } else {
+    } else if (node->data.type == FUNC) {
+        snprintf(bufer, BUFSIZ, "%s", node->data.value.sval);
+    }
+
+    else {
         snprintf(bufer, BUFSIZ, "?");
     }
 }
@@ -207,7 +210,7 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
         size_t left_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) left_son_idx, DEFAULT_EDGE_PARS, "");
         dot_code->edge_list[left_edge_idx].pars.start_suf = "L";
     }
-    if (left_son_idx != -1) {
+    if (right_son_idx != -1) {
         size_t right_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) right_son_idx, DEFAULT_EDGE_PARS, "");
         dot_code->edge_list[right_edge_idx].pars.start_suf = "R";
     }

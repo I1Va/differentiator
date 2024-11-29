@@ -196,10 +196,15 @@ bin_tree_elem_t *get_P(parsing_block_t *data) {
         }
         (*tp)++;
         return val;
+    } else if (tl[*tp].token_type == LEX_STR && tl[(*tp) + 1].token_type == LEX_OBRACE) {
+        return get_F(data);
     } else if (tl[*tp].token_type == LEX_STR && strcmp(tl[*tp].token_val.sval, "x") == 0) {
         return get_V(data);
-    } else {
+    } else if (tl[*tp].token_type == LEX_NUM) {
         return get_N(data);
+    } else {
+        SyntaxError(*tp)
+        return NULL;
     }
 }
 
@@ -209,15 +214,44 @@ bin_tree_elem_t *get_N(parsing_block_t *data) {
     token_t *tl = data->token_list;
     int *tp = &(data->tp);
 
-    int val = 0;
+    long long val = 0;
     if (tl[*tp].token_type != LEX_NUM) {
         SyntaxError(*tp);
     }
+
+    val = tl[*tp].token_val.lval;
     (*tp)++;
 
     bin_tree_elem_t *node = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {NUM});
-    node->data.value.ival = val;
+    node->data.value.lval = val;
     return node;
+}
+
+bin_tree_elem_t *get_F(parsing_block_t *data) {
+    assert(data != NULL);
+
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
+
+    if (tl[*tp].token_type == LEX_STR && tl[(*tp) + 1].token_type == LEX_OBRACE) {
+        char *func_name = tl[*tp].token_val.sval;
+
+        (*tp) += 2;
+        bin_tree_elem_t *val = get_E(data);
+        printf("E : '%d'\n", val->data.type);
+        if (tl[*tp].token_type != LEX_CBRACE) {
+            SyntaxError(*tp);
+        }
+        (*tp)++;
+
+        bin_tree_elem_t *func_node = bin_tree_create_node(data->tree, NULL, false, NULL, val, {FUNC});
+        func_node->data.value.sval = func_name;
+
+        return func_node;
+    } else {
+        SyntaxError(*tp);
+        return NULL;
+    }
 }
 
 // int get_S(parsing_block_t *data) {

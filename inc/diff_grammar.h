@@ -58,11 +58,13 @@ void token_list_dump(FILE *stream, token_t *token_list, const size_t len);
 
 void lex_scanner(parsing_block_t *data);
 
-bin_tree_elem_t *get_N(parsing_block_t *data);
+
 bin_tree_elem_t *get_G(parsing_block_t *data);
 bin_tree_elem_t *get_E(parsing_block_t *data);
 bin_tree_elem_t *get_T(parsing_block_t *data);
 bin_tree_elem_t *get_P(parsing_block_t *data);
+bin_tree_elem_t *get_N(parsing_block_t *data);
 bin_tree_elem_t *get_V(parsing_block_t *data);
+bin_tree_elem_t *get_F(parsing_block_t *data);
 
 #endif // DIFF_GRAMMAR_H

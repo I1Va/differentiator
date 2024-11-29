@@ -23,6 +23,7 @@ enum node_types {
     VAR = 0,
     NUM = 1,
     OP = 2,
+    FUNC = 3,
 };
 
 

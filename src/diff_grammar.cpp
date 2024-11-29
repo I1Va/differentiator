@@ -111,9 +111,12 @@ bin_tree_elem_t *get_E(parsing_block_t *data) {
         bin_tree_elem_t * val2 = get_T(data);
 
         if (op == '+') {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP, ADD});
+            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val->data.value.ival = ADD;
         } else {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP, SUB});
+            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val->data.value.ival = SUB;
+
         }
     }
 
@@ -132,9 +135,11 @@ bin_tree_elem_t *get_T(parsing_block_t *data) {
         (*p)++;
         bin_tree_elem_t *val2 = get_P(data);
         if (op == '*') {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP, MUL});
+            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val->data.value.ival = MUL;
         } else {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP, DIV});
+            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val->data.value.ival = DIV;
         }
     }
 
@@ -177,8 +182,9 @@ bin_tree_elem_t *get_N(parsing_block_t *data) {
     if (old_p == *p) {
         SyntaxError(*p);
     }
-
-    return bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {NUM, (long double) val});;
+    bin_tree_elem_t *node = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {NUM});
+    node->data.value.ival = val;
+    return node;
 }
 
 // int get_S(parsing_block_t *data) {
@@ -211,5 +217,8 @@ bin_tree_elem_t *get_V(parsing_block_t *data) {
     }
     (*p)++;
 
-    return bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {VAR, 0});
+    bin_tree_elem_t *res = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {VAR});
+    res->data.value.ival = 0;
+
+    return res;
 }

@@ -48,9 +48,16 @@ const size_t MAX_NODE_STRING_SZ = 128;
 const size_t MAX_LOG_FILE_PATH_SZ = 128;
 const size_t NODE_LABEL_MAX_SZ = 128;
 
+union multi_val_t {
+    int          ival;
+    long long    lval;
+    long double  fval;
+    char        *sval;
+};
+
 struct bin_tree_elem_value_t {
     int type;
-    long double value;
+    multi_val_t value;
 };
 
 struct bin_tree_elem_t {

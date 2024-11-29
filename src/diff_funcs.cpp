@@ -32,7 +32,7 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
     if (node->data.type == OP) {
         char res = '\0';
 
-        switch ((int) node->data.value) {
+        switch (node->data.value.ival) {
             case ADD: res = '+'; break;
             case DIV: res = '/'; break;
             case MUL: res = '*'; break;
@@ -42,10 +42,10 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
 
         snprintf(bufer, BUFSIZ, "%c", res);
     } else if (node->data.type == NUM) {
-        snprintf(bufer, BUFSIZ, "%Lg", node->data.value);
+        snprintf(bufer, BUFSIZ, "%d", node->data.value.ival);
     } else if (node->data.type == VAR) {
 
-        snprintf(bufer, BUFSIZ, "X%d", (int) node->data.value);
+        snprintf(bufer, BUFSIZ, "X%d", node->data.value.ival);
     } else {
         snprintf(bufer, BUFSIZ, "?");
     }
@@ -131,7 +131,8 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
         get_string_untill_bracket(left + 1, right, bufer);
 
         get_node_type(&node_type, &node_val, bufer);
-        node = bin_tree_create_node(tree, prev, prev_left, NULL, NULL, {node_type, node_val});
+        node = bin_tree_create_node(tree, prev, prev_left, NULL, NULL, {node_type});
+        node->data.value.fval = node_val;
 
         printf("leaf : '%s'\n", bufer);
         return node;
@@ -150,7 +151,8 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
 
 
     get_node_type(&node_type, &node_val, bufer);
-    node = bin_tree_create_node(tree, prev, prev_left, NULL, NULL, {node_type, node_val});
+    node = bin_tree_create_node(tree, prev, prev_left, NULL, NULL, {node_type});
+    node->data.value.fval = node_val;
 
     printf("node_operation: '%s'\n", bufer);
 
@@ -181,7 +183,7 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
 
     char bufer[MEDIUM_BUFER_SZ] = {};
 
-    printf("node : {%d %Lf}\n", node->data.type, node->data.value);
+    printf("node : {%d %Lf}\n", node->data.type, node->data.value.fval);
 
     get_node_string(bufer, node);
     printf("bufer : '%s'\n", bufer);

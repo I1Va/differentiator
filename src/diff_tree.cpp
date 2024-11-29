@@ -131,10 +131,6 @@ bin_tree_elem_t *bin_tree_create_node(bin_tree_t *tree, bin_tree_elem_t *prev, c
     return node;
 }
 
-int node_t_cmp(const bin_tree_elem_value_t node1, const bin_tree_elem_value_t node2) {
-    return node1.value < node2.value;
-}
-
 void bin_tree_push_val(bin_tree_t *tree, bin_tree_elem_t *cur_node, bin_tree_elem_value_t val,
     int (*compare_func)(const bin_tree_elem_value_t node1, const bin_tree_elem_value_t node2)) {
     assert(compare_func != NULL);

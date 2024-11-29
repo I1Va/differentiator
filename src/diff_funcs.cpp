@@ -218,3 +218,14 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
 
     return node_idx;
 }
+
+void differentiate(bin_tree_t *tree, bin_tree_elem_t *node) {
+    if (node->data.type == VAR) {
+        bin_tree_elem_t *prev = node->prev;
+        bool left_state = node->is_node_left_son;
+
+        FREE(node);
+        bin_tree_elem_t *new_node = bin_tree_create_node(tree, prev, left_state, NULL, NULL, {NUM});
+        new_node->data.value.lval = 1;
+    }
+}

@@ -7,6 +7,11 @@
 #include <stdio.h>
 #include <assert.h>
 
+const char VAR_COLOR[] = "#d56050";
+const char NUM_COLOR[] = "#ddd660";
+const char FUNC_COLOR[] = "#883060";
+const char OP_COLOR[] = "#04859D";
+
 void get_node_type(enum node_types *type, long double *value, char *name) {
     if (sscanf(name, "%Lf", value)) {
         *type = NUM;
@@ -44,7 +49,7 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
     } else if (node->data.type == NUM) {
         snprintf(bufer, BUFSIZ, "%d", node->data.value.ival);
     } else if (node->data.type == VAR) {
-        snprintf(bufer, BUFSIZ, "X%d", node->data.value.ival);
+        snprintf(bufer, BUFSIZ, "x");
     } else if (node->data.type == FUNC) {
         snprintf(bufer, BUFSIZ, "%s", node->data.value.sval);
     }
@@ -196,6 +201,16 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
     snprintf(label, label_sz, "{'%s' | {<L> (L)| <R> (R)}}", bufer);
     // printf("label : [%s]\n", label);
     int node_idx = (int) dot_new_node(dot_code, DEFAULT_NODE_PARS, label);
+    if (node->data.type == VAR) {
+        dot_code->node_list[node_idx].pars.fillcolor = VAR_COLOR;
+    } else if (node->data.type == FUNC) {
+        dot_code->node_list[node_idx].pars.fillcolor = FUNC_COLOR;
+    } else if (node->data.type == NUM) {
+        dot_code->node_list[node_idx].pars.fillcolor = NUM_COLOR;
+    } else if (node->data.type == OP) {
+        dot_code->node_list[node_idx].pars.fillcolor = OP_COLOR;
+    }
+
     int left_son_idx = -1;
     int right_son_idx = -1;
 

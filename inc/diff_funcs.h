@@ -20,19 +20,19 @@ const size_t MAX_NODE_WRAP_SZ = 64;
 
 
 enum node_types {
-    VAR = 0,
-    NUM = 1,
-    OP = 2,
-    FUNC = 3,
+    NODE_VAR = 0,
+    NODE_NUM = 1,
+    NODE_OP = 2,
+    NODE_FUNC = 3,
 };
 
 
 
 enum opers {
-    ADD = 0,
-    DIV = 1,
-    MUL = 2,
-    SUB = 3,
+    OP_ADD = 0,
+    OP_DIV = 1,
+    OP_MUL = 2,
+    OP_SUB = 3,
 };
 
 void get_node_type(enum node_types *type, long double *value, char *name);

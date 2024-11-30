@@ -45,7 +45,7 @@ const size_t MAX_NODE_STRING_SZ = 128;
 const size_t MAX_LOG_FILE_PATH_SZ = 128;
 const size_t NODE_LABEL_MAX_SZ = 128;
 
-union multi_val_t {
+struct multi_val_t {
     int          ival;
     long long    lval;
     long double  fval;

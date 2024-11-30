@@ -14,12 +14,12 @@ const char OP_COLOR[] = "#04859D";
 
 void get_node_type(enum node_types *type, long double *value, char *name) {
     if (sscanf(name, "%Lf", value)) {
-        *type = NUM;
+        *type = NODE_NUM;
         return;
     }
 
     if (strlen(name) == 1) {
-        *type = OP;
+        *type = NODE_OP;
 
         for (size_t i = 0; i < VALID_OPERATIONS_CNT; i++) {
             if (*name == VALID_OPERATIONS[i]) {
@@ -29,28 +29,28 @@ void get_node_type(enum node_types *type, long double *value, char *name) {
         }
     }
 
-    *type = VAR;
+    *type = NODE_VAR;
     *value = 0;
 }
 
 void get_node_string(char *bufer, bin_tree_elem_t *node) {
-    if (node->data.type == OP) {
+    if (node->data.type == NODE_OP) {
         char res = '\0';
 
         switch (node->data.value.ival) {
-            case ADD: res = '+'; break;
-            case DIV: res = '/'; break;
-            case MUL: res = '*'; break;
-            case SUB: res = '-'; break;
+            case OP_ADD: res = '+'; break;
+            case OP_DIV: res = '/'; break;
+            case OP_MUL: res = '*'; break;
+            case OP_SUB: res = '-'; break;
             default: res = '?'; break;
         }
 
         snprintf(bufer, BUFSIZ, "%c", res);
-    } else if (node->data.type == NUM) {
+    } else if (node->data.type == NODE_NUM) {
         snprintf(bufer, BUFSIZ, "%d", node->data.value.ival);
-    } else if (node->data.type == VAR) {
+    } else if (node->data.type == NODE_VAR) {
         snprintf(bufer, BUFSIZ, "x");
-    } else if (node->data.type == FUNC) {
+    } else if (node->data.type == NODE_FUNC) {
         snprintf(bufer, BUFSIZ, "%s", node->data.value.sval);
     }
 
@@ -130,7 +130,7 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
     assert(tree != NULL);
 
     char bufer[MINI_BUFER_SZ] = {};
-    enum node_types node_type = VAR;
+    enum node_types node_type = NODE_VAR;
     long double node_val = 0;
     bin_tree_elem_t *node = NULL;
 
@@ -201,13 +201,13 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
     snprintf(label, label_sz, "{'%s' | {<L> (L)| <R> (R)}}", bufer);
     // printf("label : [%s]\n", label);
     int node_idx = (int) dot_new_node(dot_code, DEFAULT_NODE_PARS, label);
-    if (node->data.type == VAR) {
+    if (node->data.type == NODE_VAR) {
         dot_code->node_list[node_idx].pars.fillcolor = VAR_COLOR;
-    } else if (node->data.type == FUNC) {
+    } else if (node->data.type == NODE_FUNC) {
         dot_code->node_list[node_idx].pars.fillcolor = FUNC_COLOR;
-    } else if (node->data.type == NUM) {
+    } else if (node->data.type == NODE_NUM) {
         dot_code->node_list[node_idx].pars.fillcolor = NUM_COLOR;
-    } else if (node->data.type == OP) {
+    } else if (node->data.type == NODE_OP) {
         dot_code->node_list[node_idx].pars.fillcolor = OP_COLOR;
     }
 
@@ -235,11 +235,11 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
 }
 
 void differentiate(bin_tree_t *tree, bin_tree_elem_t *node) {
-    if (node->data.type == VAR) {
+    if (node->data.type == NODE_VAR) {
         bin_tree_elem_t *prev = node->prev;
         bool left_state = node->is_node_left_son;
         FREE(node);
-        bin_tree_elem_t *new_node = bin_tree_create_node(NULL, NULL, {NUM});
+        bin_tree_elem_t *new_node = bin_tree_create_node(NULL, NULL, {NODE_NUM});
         new_node->data.value.lval = 1;
     }
 }

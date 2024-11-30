@@ -9,6 +9,7 @@
 #include "diff_tree.h"
 #include "general.h"
 #include "graphviz_funcs.h"
+#include "diff_DSL.h"
 #include "string_funcs.h"
 
 // void SyntaxError() {
@@ -146,11 +147,9 @@ bin_tree_elem_t *get_E(parsing_block_t *data) {
         bin_tree_elem_t * val2 = get_T(data);
 
         if (op == LEX_ADD) {
-            val = bin_tree_create_node(val, val2, {OP});
-            val->data.value.ival = ADD;
+            val = _ADD(val, val2);
         } else {
-            val = bin_tree_create_node(val, val2, {OP});
-            val->data.value.ival = SUB;
+            val = _SUB(val, val2);
         }
     }
 
@@ -169,11 +168,9 @@ bin_tree_elem_t *get_T(parsing_block_t *data) {
         (*tp)++;
         bin_tree_elem_t *val2 = get_P(data);
         if (op == LEX_MUL) {
-            val = bin_tree_create_node(val, val2, {OP});
-            val->data.value.ival = MUL;
+            val = _MUL(val, val2);
         } else {
-            val = bin_tree_create_node(val, val2, {OP});
-            val->data.value.ival = DIV;
+            val = _DIV(val, val2);
         }
         printf("type: (%d)\n", tl[*tp].token_type);
     }
@@ -221,9 +218,7 @@ bin_tree_elem_t *get_N(parsing_block_t *data) {
     val = tl[*tp].token_val.lval;
     (*tp)++;
 
-    bin_tree_elem_t *node = bin_tree_create_node(NULL, NULL, {NUM});
-    node->data.value.lval = val;
-    return node;
+    return _NUM(val);
 }
 
 bin_tree_elem_t *get_F(parsing_block_t *data) {
@@ -243,10 +238,7 @@ bin_tree_elem_t *get_F(parsing_block_t *data) {
         }
         (*tp)++;
 
-        bin_tree_elem_t *func_node = bin_tree_create_node(NULL, val, {FUNC});
-        func_node->data.value.sval = func_name;
-
-        return func_node;
+        return _FUNC(val, func_name);
     } else {
         SyntaxError(*tp);
         return NULL;
@@ -283,8 +275,5 @@ bin_tree_elem_t *get_V(parsing_block_t *data) {
     }
     (*tp)++;
 
-    bin_tree_elem_t *res = bin_tree_create_node(NULL, NULL, {VAR});
-    res->data.value.ival = 0;
-
-    return res;
+    return _VAR();
 }

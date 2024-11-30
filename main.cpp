@@ -68,9 +68,10 @@ int main() {
     // draw_parsing_text(&data);
 
     tree.root = get_G(&data);
-    convert_tree_to_dot(tree.root, &dot_code, &storage);
 
-    // differentiate(&tree, tree.root);
+    tree.root = differentiate(tree.root);
+
+    convert_tree_to_dot(tree.root, &dot_code, &storage);
     // printf("G: %d\n", get_G(&data));
 
     dot_code_render(&dot_dir, &dot_code);

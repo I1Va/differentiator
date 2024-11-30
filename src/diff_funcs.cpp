@@ -6,6 +6,7 @@
 #include "diff_funcs.h"
 #include "string_funcs.h"
 #include "general.h"
+#include "diff_DSL.h"
 
 const char VAR_COLOR[] = "#d56050";
 const char NUM_COLOR[] = "#ddd660";
@@ -34,6 +35,11 @@ void get_node_type(enum node_types *type, long double *value, char *name) {
 }
 
 void get_node_string(char *bufer, bin_tree_elem_t *node) {
+    if (node == NULL) {
+        snprintf(bufer, BUFSIZ, "NULL");
+        return;
+    }
+
     if (node->data.type == NODE_OP) {
         char res = '\0';
 
@@ -47,7 +53,7 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
 
         snprintf(bufer, BUFSIZ, "%c", res);
     } else if (node->data.type == NODE_NUM) {
-        snprintf(bufer, BUFSIZ, "%d", node->data.value.ival);
+        snprintf(bufer, BUFSIZ, "%Ld", node->data.value.lval);
     } else if (node->data.type == NODE_VAR) {
         snprintf(bufer, BUFSIZ, "x");
     } else if (node->data.type == NODE_FUNC) {
@@ -234,12 +240,85 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
     return node_idx;
 }
 
-void differentiate(bin_tree_t *tree, bin_tree_elem_t *node) {
+
+void node_dump(FILE *log_file, bin_tree_elem_t *node) {
+    assert(log_file != NULL);
+    assert(node != NULL);
+
+    char bufer[BUFSIZ] = {};
+    size_t indent_sz = 4;
+    size_t indent_step = 4;
+
+    fprintf(log_file, "node[%p]\n{\n", node);
+
+    size_t dot_code_pars_block_sz = get_max_str_len(5,
+        "left_", "right_",
+        "prev_", "is_left_son_",
+        "data_"
+    );
+
+    fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "left_");
+    get_node_string(bufer, node->left);
+    fprintf(log_file, " = ([%p]; '%s')\n", node->left, bufer);
+
+    fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "right_");
+    get_node_string(bufer, node->right);
+    fprintf(log_file, " = ([%p]; '%s')\n", node->right, bufer);
+
+    fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "prev_");
+    get_node_string(bufer, node->prev);
+    fprintf(log_file, " = ([%p]; '%s')\n", node->prev, bufer);
+
+    fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "is_left_son_");
+    fprintf(log_file, " = (%d)\n", node->is_node_left_son);
+
+    fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "data_");
+    get_node_string(bufer, node);
+    fprintf(log_file, " = ('%s')\n", bufer);
+
+    fprintf(log_file, "}\n");
+}
+
+bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
+    assert(node != NULL);
+
+    bin_tree_elem_t *prev_node = node->prev;
+    bin_tree_elem_t *new_node  = NULL;
+    bin_tree_elem_t *ldiff     = NULL;
+    bin_tree_elem_t *rdiff     = NULL;
+    bin_tree_elem_t *left      = node->left;
+    bin_tree_elem_t *right     = node->right;
+
+    bool is_node_left_son = node->is_node_left_son;
+
     if (node->data.type == NODE_VAR) {
-        bin_tree_elem_t *prev = node->prev;
-        bool left_state = node->is_node_left_son;
-        FREE(node);
-        bin_tree_elem_t *new_node = bin_tree_create_node(NULL, NULL, {NODE_NUM});
-        new_node->data.value.lval = 1;
+        new_node = _NUM(1);
+    } else if (node->data.type == NODE_NUM) {
+        new_node = _NUM(0);
+    } else if (node->data.type == NODE_OP) {
+        ldiff = differentiate(node->left);
+        rdiff = differentiate(node->right);
+
+        if (node->data.value.ival == OP_ADD) {
+            new_node = _ADD(ldiff, rdiff);
+        } else if (node->data.value.ival == OP_SUB) {
+            new_node = _SUB(ldiff, rdiff);
+        } else if (node->data.value.ival == OP_MUL) {
+            new_node = _ADD(_MUL(ldiff, right), _MUL(left, rdiff));
+        } else if (node->data.value.ival == OP_DIV) {
+            new_node = _DIV(_SUB(_MUL(ldiff, right), _MUL(left, rdiff)), _MUL(right, right));
+        }
     }
+
+    if (node->prev) { // not root
+        if (is_node_left_son) {
+        prev_node->left = new_node;
+        } else {
+            prev_node->right = new_node;
+        }
+    }
+
+    FREE(node);
+
+    return new_node;
 }

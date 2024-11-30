@@ -1,11 +1,11 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "diff_tree.h"
 #include "diff_funcs.h"
 #include "string_funcs.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include "general.h"
 
 const char VAR_COLOR[] = "#d56050";
 const char NUM_COLOR[] = "#ddd660";
@@ -139,7 +139,7 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
         get_string_untill_bracket(left + 1, right, bufer);
 
         get_node_type(&node_type, &node_val, bufer);
-        node = bin_tree_create_node(tree, prev, prev_left, NULL, NULL, {node_type});
+        node = bin_tree_create_node(NULL, NULL, {node_type});
         node->data.value.fval = node_val;
 
         printf("leaf : '%s'\n", bufer);
@@ -159,7 +159,7 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
 
 
     get_node_type(&node_type, &node_val, bufer);
-    node = bin_tree_create_node(tree, prev, prev_left, NULL, NULL, {node_type});
+    node = bin_tree_create_node(NULL, NULL, {node_type});
     node->data.value.fval = node_val;
 
     printf("node_operation: '%s'\n", bufer);
@@ -238,9 +238,8 @@ void differentiate(bin_tree_t *tree, bin_tree_elem_t *node) {
     if (node->data.type == VAR) {
         bin_tree_elem_t *prev = node->prev;
         bool left_state = node->is_node_left_son;
-
         FREE(node);
-        bin_tree_elem_t *new_node = bin_tree_create_node(tree, prev, left_state, NULL, NULL, {NUM});
+        bin_tree_elem_t *new_node = bin_tree_create_node(NULL, NULL, {NUM});
         new_node->data.value.lval = 1;
     }
 }

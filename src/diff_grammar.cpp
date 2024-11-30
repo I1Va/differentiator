@@ -146,12 +146,11 @@ bin_tree_elem_t *get_E(parsing_block_t *data) {
         bin_tree_elem_t * val2 = get_T(data);
 
         if (op == LEX_ADD) {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val = bin_tree_create_node(val, val2, {OP});
             val->data.value.ival = ADD;
         } else {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val = bin_tree_create_node(val, val2, {OP});
             val->data.value.ival = SUB;
-
         }
     }
 
@@ -170,10 +169,10 @@ bin_tree_elem_t *get_T(parsing_block_t *data) {
         (*tp)++;
         bin_tree_elem_t *val2 = get_P(data);
         if (op == LEX_MUL) {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val = bin_tree_create_node(val, val2, {OP});
             val->data.value.ival = MUL;
         } else {
-            val = bin_tree_create_node(data->tree, NULL, false, val, val2, {OP});
+            val = bin_tree_create_node(val, val2, {OP});
             val->data.value.ival = DIV;
         }
         printf("type: (%d)\n", tl[*tp].token_type);
@@ -222,7 +221,7 @@ bin_tree_elem_t *get_N(parsing_block_t *data) {
     val = tl[*tp].token_val.lval;
     (*tp)++;
 
-    bin_tree_elem_t *node = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {NUM});
+    bin_tree_elem_t *node = bin_tree_create_node(NULL, NULL, {NUM});
     node->data.value.lval = val;
     return node;
 }
@@ -244,7 +243,7 @@ bin_tree_elem_t *get_F(parsing_block_t *data) {
         }
         (*tp)++;
 
-        bin_tree_elem_t *func_node = bin_tree_create_node(data->tree, NULL, false, NULL, val, {FUNC});
+        bin_tree_elem_t *func_node = bin_tree_create_node(NULL, val, {FUNC});
         func_node->data.value.sval = func_name;
 
         return func_node;
@@ -284,7 +283,7 @@ bin_tree_elem_t *get_V(parsing_block_t *data) {
     }
     (*tp)++;
 
-    bin_tree_elem_t *res = bin_tree_create_node(data->tree, NULL, false, NULL, NULL, {VAR});
+    bin_tree_elem_t *res = bin_tree_create_node(NULL, NULL, {VAR});
     res->data.value.ival = 0;
 
     return res;

@@ -71,6 +71,7 @@ token_t next_token(parsing_block_t *data) {
         case ' ': return {LEX_SPACE};
         case '/': return {LEX_DIV};
         case '\t': return {LEX_SPACE};
+        case '^': return {LEX_POW};
         case EOF: return {LEX_EOF};
         case '\0': return {LEX_EOF};
         default: ScannerError(*p, s[*p])
@@ -92,6 +93,7 @@ void token_list_dump(FILE *stream, token_t *token_list, const size_t len) {
             LEX_DESCR_(stream, LEX_OBRACE, "%c", '(')
             LEX_DESCR_(stream, LEX_CBRACE, "%c", ')')
             LEX_DESCR_(stream, LEX_EOL, "%s", "\\n")
+            LEX_DESCR_(stream, LEX_POW, "%s", "^")
             LEX_DESCR_(stream, LEX_STR, "%s", token_list[i].token_val.sval)
             LEX_DESCR_(stream, LEX_SPACE, "%c", ' ')
             default: fprintf(stream, "UNKNOWN_LEX(%d) ", token_list[i].token_type); break;
@@ -245,25 +247,6 @@ bin_tree_elem_t *get_F(parsing_block_t *data) {
         return NULL;
     }
 }
-
-// int get_S(parsing_block_t *data) {
-//     assert(data != NULL);
-
-//     char *s = data->s;
-//     int *p = &(data->p);
-//     int old_p = *p;
-
-//     int val = 0;
-//     while (('0' <= s[*p] && s[*p] <= '9') || ('a' <= s[*p] && s[*p] <= 'z') || ('A' <= s[*p] && s[*p] <= 'z')) {
-//         val = val * 10 + s[*p] - '0';
-//         (*p)++;
-//     }
-//     if (old_p == *p) {
-//         SyntaxError(*tp);
-//     }
-
-//     return val;
-// }
 
 bin_tree_elem_t *get_V(parsing_block_t *data) {
     assert(data != NULL);

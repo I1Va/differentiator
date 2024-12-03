@@ -26,6 +26,7 @@ enum lexemtype {
     LEX_SPACE = 9,
     LEX_STR = 10,
     LEX_DIV = 11,
+    LEX_POW = 12,
 };
 
 struct token_t {

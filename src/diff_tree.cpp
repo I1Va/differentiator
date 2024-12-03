@@ -41,8 +41,19 @@ void bin_tree_err_get_descr(const enum bin_tree_err_t err_code, char err_descr_s
 
 
 // TREE_PROCESSING \\-------------------------------------------------------------------------------->
+
 bool bin_tree_ctor(bin_tree_t *tree, const char log_path[]) {
-    assert(tree != NULL);
+    stk_err stk_last_err = STK_ERR_OK;
+
+    tree->n_nodes = 0;
+
+    tree->node_stack = {};
+    STACK_INIT(&tree->node_stack, 0, sizeof(bin_tree_elem_t *), tree->log_file_ptr, &stk_last_err)
+
+    if (stk_last_err != STK_ERR_OK) {
+        DEBUG_BT_LIST_ERROR(BT_ERR_STACK, "node_stack ctor failed");
+        CLEAR_MEMORY(exit_mark)
+    }
 
     strcpy(tree->log_file_path, log_path);
     tree->log_file_ptr = fopen(log_path, "a");
@@ -56,23 +67,37 @@ bool bin_tree_ctor(bin_tree_t *tree, const char log_path[]) {
     return true;
 
     exit_mark:
+
+    stack_destroy(&tree->node_stack);
     if (tree->log_file_ptr != NULL) {
         fclose(tree->log_file_ptr);
     }
     return false;
 }
 
-bin_tree_elem_t *bin_tree_create_node(bin_tree_elem_t *left, bin_tree_elem_t *right, const bin_tree_elem_value_t data) {
-
+bin_tree_elem_t *bin_tree_create_node(bin_tree_elem_t *left, bin_tree_elem_t *right, const bin_tree_elem_value_t data, void *tree_ptr) {
     bin_tree_elem_t *node = (bin_tree_elem_t *) calloc(1, sizeof(bin_tree_elem_t));
     if (node == NULL) {
         DEBUG_BT_LIST_ERROR(BT_ERR_ALLOC, "node alloc failed");
         return NULL;
     }
 
+    if (tree_ptr) {
+        bin_tree_t *tree = (bin_tree_t *) tree_ptr;
+
+        stk_err stk_last_err = STK_ERR_OK;
+        stack_push(&tree->node_stack, &node, &stk_last_err);
+        if (stk_last_err != STK_ERR_OK) {
+            DEBUG_BT_LIST_ERROR(BT_ERR_STACK, "stack push failed");
+            return NULL;
+        }
+    }
+
     node->left = left;
     node->right = right;
     node->data = data;
+    node->graphviz_idx = -1;
+    node->constant_state = false;
 
     if (left) {
         left->prev = node;
@@ -84,6 +109,49 @@ bin_tree_elem_t *bin_tree_create_node(bin_tree_elem_t *left, bin_tree_elem_t *ri
     }
 
     return node;
+}
+
+bin_tree_elem_t *get_node_copy(bin_tree_elem_t *node) {
+    assert(node != NULL);
+
+    bin_tree_elem_t *new_node = bin_tree_create_node(NULL, NULL, node->data, node->tree);
+    new_node->is_node_left_son = node->is_node_left_son;
+    new_node->constant_state = node->constant_state;
+
+    if (node->tree) {
+        bin_tree_t *tree = (bin_tree_t *) node->tree;
+
+        stk_err stk_last_err = STK_ERR_OK;
+        stack_push(&tree->node_stack, &node, &stk_last_err);
+        if (stk_last_err != STK_ERR_OK) {
+            DEBUG_BT_LIST_ERROR(BT_ERR_STACK, "stack push failed");
+            return NULL;
+        }
+    }
+
+    return new_node;
+}
+
+bin_tree_elem_t *get_tree_copy(bin_tree_elem_t *root) {
+    assert(root != NULL);
+
+    bin_tree_elem_t *root_copy  = NULL;
+    bin_tree_elem_t *left_copy  = NULL;
+    bin_tree_elem_t *right_copy = NULL;
+
+    if (root->left) {
+        left_copy = get_tree_copy(root->left);
+    }
+    if (root->right) {
+        right_copy = get_tree_copy(root->right);
+    }
+
+    root_copy = get_node_copy(root);
+
+    root_copy->left = left_copy;
+    root_copy->right = right_copy;
+
+    return root_copy;
 }
 
 void bin_tree_print(bin_tree_elem_t *node, void (*outp_func)(char *dest, const size_t maxn_n, const bin_tree_elem_t *node)) {
@@ -106,18 +174,30 @@ void bin_tree_print(bin_tree_elem_t *node, void (*outp_func)(char *dest, const s
     printf(")");
 }
 
-void bin_tree_dtor(bin_tree_elem_t *root) {
+void sub_tree_dtor(bin_tree_elem_t *root) {
     if (!root) {
         return;
     }
 
     if (root->left) {
-        bin_tree_dtor(root->left);
+        sub_tree_dtor(root->left);
     }
     if (root->right) {
-        bin_tree_dtor(root->right);
+        sub_tree_dtor(root->right);
     }
     FREE(root);
+}
+
+void bin_tree_dtor(bin_tree_t *tree) {
+    if (!tree) {
+        return;
+    }
+
+    sub_tree_dtor(tree->root);
+
+    stack_destroy(&tree->node_stack);
+    tree->root = NULL;
+    tree->n_nodes = 0;
 }
 
 void bin_tree_rec_nodes_cnt(bin_tree_elem_t *node, size_t *nodes_cnt) {
@@ -144,5 +224,27 @@ void bin_tree_verify(const bin_tree_t tree, bin_tree_err_t *return_err) {
         bin_tree_err_add(return_err, BT_ERR_CYCLED);
         debug("tree might be cycled. nodes cnt exceeds max nodes cnt value");
         return;
+    }
+}
+
+void mark_subtree(bin_tree_elem_t *root, bin_tree_t *tree) {
+    if (!root) {
+        return;
+    }
+    root->tree = (void *) tree;
+    stk_err stk_last_err = STK_ERR_OK;
+
+    stack_push(&tree->node_stack, &root, &stk_last_err);
+
+    if (stk_last_err != STK_ERR_OK) {
+        DEBUG_BT_LIST_ERROR(BT_ERR_STACK, "stack push failed");
+        return;
+    }
+
+    if (root->left) {
+        mark_subtree(root->left, tree);
+    }
+    if (root->right) {
+        mark_subtree(root->right, tree);
     }
 }

@@ -4,6 +4,8 @@
 
 #include "diff_tree.h"
 #include "diff_funcs.h"
+#include "error_processing.h"
+#include "stack_funcs.h"
 #include "string_funcs.h"
 #include "general.h"
 #include "diff_DSL.h"
@@ -50,7 +52,6 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
             case OP_SUB: res = '-'; break;
             default: res = '?'; break;
         }
-
         snprintf(bufer, BUFSIZ, "%c", res);
     } else if (node->data.type == NODE_NUM) {
         snprintf(bufer, BUFSIZ, "%Ld", node->data.value.lval);
@@ -190,23 +191,22 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
     return node;
 }
 
-int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage_t **storage) {
+size_t put_node_in_dotcode(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage_t **storage) {
     assert(dot_code != NULL);
     assert(storage != NULL);
     assert(node != NULL);
 
     char bufer[MEDIUM_BUFER_SZ] = {};
-
-    printf("node : {%d %Lf}\n", node->data.type, node->data.value.fval);
-
     get_node_string(bufer, node);
-    printf("bufer : '%s'\n", bufer);
+    // printf("bufer : '%s'\n", bufer);
 
     size_t label_sz = MAX_NODE_WRAP_SZ + strlen(bufer);
     char *label = get_new_str_ptr(storage, label_sz);
     snprintf(label, label_sz, "{'%s' | {<L> (L)| <R> (R)}}", bufer);
     // printf("label : [%s]\n", label);
-    int node_idx = (int) dot_new_node(dot_code, DEFAULT_NODE_PARS, label);
+
+    size_t node_idx = dot_new_node(dot_code, DEFAULT_NODE_PARS, label);
+
     if (node->data.type == NODE_VAR) {
         dot_code->node_list[node_idx].pars.fillcolor = VAR_COLOR;
     } else if (node->data.type == NODE_FUNC) {
@@ -217,14 +217,24 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
         dot_code->node_list[node_idx].pars.fillcolor = OP_COLOR;
     }
 
+    return node_idx;
+}
+
+int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage_t **storage) {
+    assert(dot_code != NULL);
+    assert(storage != NULL);
+    assert(node != NULL);
+
+    size_t node_idx = put_node_in_dotcode(node, dot_code, storage);
+
     int left_son_idx = -1;
     int right_son_idx = -1;
 
     if (node->left) {
-        left_son_idx = convert_tree_to_dot(node->left, dot_code, storage);
+        left_son_idx = convert_subtree_to_dot(node->left, dot_code, storage);
     }
     if (node->right) {
-        right_son_idx = convert_tree_to_dot(node->right, dot_code, storage);
+        right_son_idx = convert_subtree_to_dot(node->right, dot_code, storage);
     }
 
     if (left_son_idx != -1) {
@@ -236,10 +246,53 @@ int convert_tree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage
         dot_code->edge_list[right_edge_idx].pars.start_suf = "R";
     }
 
-
-    return node_idx;
+    return (int) node_idx;
 }
 
+bool convert_tree_to_dot(bin_tree_t *tree, dot_code_t *dot_code, str_storage_t **storage) {
+    assert(dot_code != NULL);
+    assert(storage != NULL);
+    assert(tree != NULL);
+
+    stk_err return_err = STK_ERR_OK;
+
+    for (size_t i = 0; i < tree->node_stack.size; i++) {
+        bin_tree_elem_t *node = *((bin_tree_elem_t **) stack_get_elem(&tree->node_stack, i, &return_err));
+
+        if (return_err != STK_ERR_OK) {
+            debug("stack_get_elem[%lu] failed", i);
+            return false;
+        }
+
+        node->graphviz_idx = (int) put_node_in_dotcode(node, dot_code, storage);
+    }
+
+    for (size_t i = 0; i < tree->node_stack.size; i++) {
+        bin_tree_elem_t *node = *((bin_tree_elem_t **) stack_get_elem(&tree->node_stack, i, &return_err));
+
+        // printf("node[%p] = {%d}\n", node, node->graphviz_idx);
+        // node_dump(stdout, node);
+
+        if (return_err != STK_ERR_OK) {
+            debug("stack_get_elem[%lu] failed", i);
+            return false;
+        }
+
+
+        if (node->left) {
+            size_t left_edge_idx = dot_new_edge(dot_code, (size_t) node->graphviz_idx, (size_t) node->left->graphviz_idx, DEFAULT_EDGE_PARS, "");
+            // printf("%d -> %d\n", node->graphviz_idx, node->left->graphviz_idx);
+            dot_code->edge_list[left_edge_idx].pars.start_suf = "L";
+        }
+        if (node->right) {
+            size_t right_edge_idx = dot_new_edge(dot_code, (size_t) node->graphviz_idx, (size_t) node->right->graphviz_idx, DEFAULT_EDGE_PARS, "");
+            // printf("%d -> %d\n", node->graphviz_idx, node->right->graphviz_idx);
+            dot_code->edge_list[right_edge_idx].pars.start_suf = "R";
+        };
+    }
+
+    return true;
+}
 
 void node_dump(FILE *log_file, bin_tree_elem_t *node) {
     assert(log_file != NULL);
@@ -267,7 +320,7 @@ void node_dump(FILE *log_file, bin_tree_elem_t *node) {
 
     fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "prev_");
     get_node_string(bufer, node->prev);
-    fprintf(log_file, " = ([%p]; '%s')\n", node->prev, bufer);
+    // fprintf(log_file, " = ([%p]; '%s')\n", node->prev, bufer);
 
     fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "is_left_son_");
     fprintf(log_file, " = (%d)\n", node->is_node_left_son);
@@ -277,48 +330,4 @@ void node_dump(FILE *log_file, bin_tree_elem_t *node) {
     fprintf(log_file, " = ('%s')\n", bufer);
 
     fprintf(log_file, "}\n");
-}
-
-bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
-    assert(node != NULL);
-
-    bin_tree_elem_t *prev_node = node->prev;
-    bin_tree_elem_t *new_node  = NULL;
-    bin_tree_elem_t *ldiff     = NULL;
-    bin_tree_elem_t *rdiff     = NULL;
-    bin_tree_elem_t *left      = node->left;
-    bin_tree_elem_t *right     = node->right;
-
-    bool is_node_left_son = node->is_node_left_son;
-
-    if (node->data.type == NODE_VAR) {
-        new_node = _NUM(1);
-    } else if (node->data.type == NODE_NUM) {
-        new_node = _NUM(0);
-    } else if (node->data.type == NODE_OP) {
-        ldiff = differentiate(node->left);
-        rdiff = differentiate(node->right);
-
-        if (node->data.value.ival == OP_ADD) {
-            new_node = _ADD(ldiff, rdiff);
-        } else if (node->data.value.ival == OP_SUB) {
-            new_node = _SUB(ldiff, rdiff);
-        } else if (node->data.value.ival == OP_MUL) {
-            new_node = _ADD(_MUL(ldiff, right), _MUL(left, rdiff));
-        } else if (node->data.value.ival == OP_DIV) {
-            new_node = _DIV(_SUB(_MUL(ldiff, right), _MUL(left, rdiff)), _MUL(right, right));
-        }
-    }
-
-    if (node->prev) { // not root
-        if (is_node_left_son) {
-        prev_node->left = new_node;
-        } else {
-            prev_node->right = new_node;
-        }
-    }
-
-    FREE(node);
-
-    return new_node;
 }

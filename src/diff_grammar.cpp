@@ -88,6 +88,7 @@ void token_list_dump(FILE *stream, token_t *token_list, const size_t len) {
             LEX_DESCR_(stream, LEX_NUM, "%Ld", token_list[i].token_val.lval)
             LEX_DESCR_(stream, LEX_MUL, "%c", '*')
             LEX_DESCR_(stream, LEX_SUB, "%c", '-')
+            LEX_DESCR_(stream, LEX_DIV, "%c", '/')
             LEX_DESCR_(stream, LEX_OBRACE, "%c", '(')
             LEX_DESCR_(stream, LEX_CBRACE, "%c", ')')
             LEX_DESCR_(stream, LEX_EOL, "%s", "\\n")

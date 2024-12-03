@@ -132,11 +132,8 @@ bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node) {
         node->left = left;
         node->right = right;
 
-        if (left == 0) {
-            node_dump(stdout, node);
-            assert(0);
-        }
-
+        assert(left != NULL);
+        assert(right != NULL);
 
         bin_tree_elem_t *new_node = NULL;
 
@@ -154,12 +151,35 @@ bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node) {
             }
             return new_node;
         }
+
         if (node->data.value.ival == OP_ADD) {
             if (left->data.type == NODE_NUM && left->data.value.lval == 0) {
                 new_node = right;
                 FREE(left);
                 FREE(node)
             } else if (right->data.type == NODE_NUM && right->data.value.lval == 0) {
+                new_node = left;
+                FREE(right);
+                FREE(node);
+            } else {
+                new_node = node;
+            }
+            return new_node;
+        }
+
+        if (node->data.value.ival == OP_DIV) {
+            if (right->data.type == NODE_NUM && right->data.value.lval == 1) {
+                new_node = left;
+                FREE(right);
+                FREE(node);
+            } else {
+                new_node = node;
+            }
+            return new_node;
+        }
+
+        if (node->data.value.ival == OP_SUB) {
+            if (right->data.type == NODE_NUM && right->data.value.lval == 0) {
                 new_node = left;
                 FREE(right);
                 FREE(node);
@@ -243,6 +263,64 @@ bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
     return NULL;
 }
 
+void make_latex_code(FILE *stream, bin_tree_elem_t *node) {
+    assert(node != NULL);
+
+    char bufer[MEDIUM_BUFER_SZ] = {};
+    get_node_string(bufer, node);
+
+    if (node->data.type == NODE_VAR) {
+        fprintf(stream, "%s", bufer);
+        return;
+    }
+
+    if (node->data.type == NODE_NUM) {
+
+        if (node->data.value.lval < 0) {
+            fprintf(stream, "(%s)", bufer);
+        } else {
+            fprintf(stream, "%s", bufer);
+        }
+        return;
+    }
+
+    if (node->data.type == NODE_OP) {
+        if (node->data.value.ival == OP_DIV) {
+            fprintf(stream, "(");
+            if (node->left) {
+                make_latex_code(stream, node->left);
+            }
+            fprintf(stream, ")");
+
+            fprintf(stream, "%s", bufer);
+
+            fprintf(stream, "(");
+            if (node->right) {
+                make_latex_code(stream, node->right);
+            }
+            fprintf(stream, ")");
+        } else {
+            if (node->left) {
+                make_latex_code(stream, node->left);
+            }
+
+            fprintf(stream, "%s", bufer);
+
+            if (node->right) {
+                make_latex_code(stream, node->right);
+            }
+        }
+
+        return;
+    }
+
+    if (node->data.type == NODE_FUNC) {
+        fprintf(stream, "%s(", bufer);
+        make_latex_code(stream, node->right);
+        fprintf(stream, ")");
+    }
+}
+
 int main() {
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
     str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
@@ -274,10 +352,18 @@ int main() {
 
 
 
-    write_infix(tree.root);
+    printf("infix: '"); write_infix(tree.root); printf("'\n");
 
-    // convert_tree_to_dot(&tree, &dot_code, &storage); // FIXME:
-    // printf("G: %d\n", get_G(&data));
+
+    FILE *latex_code_file = fopen("./code.tex", "w");
+    make_latex_code(latex_code_file, tree.root);
+    fclose(latex_code_file);
+
+
+
+
+
+
 
     dot_code_render(&dot_dir, &dot_code);
 

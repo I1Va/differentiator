@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <cstdlib>
 #include <cstring>
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,7 +196,37 @@ bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node) {
     return NULL;
 }
 
-bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
+bin_tree_elem_t *roll_up_null_mult(bin_tree_elem_t *node) {
+    assert(node != NULL);
+
+    if (node->data.type == NODE_OP && node->data.value.ival == OP_MUL) {
+        bool left_null_state = (node->left->data.type == NODE_NUM) && (node->left->data.value.lval == 0);
+        bool right_null_state = (node->right->data.type == NODE_NUM) && (node->right->data.value.lval == 0);
+
+        if (left_null_state || right_null_state) {
+            bin_tree_elem_t *new_node = _NUM(0);
+            new_node->constant_state = true;
+
+            sub_tree_dtor(node);
+            return new_node;
+        }
+    }
+
+    if (node->data.type == NODE_OP && node->data.value.ival == OP_DIV) {
+        bool left_null_state = node->left->data.type == NODE_NUM && node->left->data.value.lval == 0;
+        if (left_null_state) {
+            bin_tree_elem_t *new_node = _NUM(0);
+            new_node->constant_state = true;
+
+            sub_tree_dtor(node);
+            return new_node;
+        }
+    }
+
+    return node;
+}
+
+bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node) {
     assert(node != NULL);
 
     if (node->data.type == NODE_NUM) {
@@ -207,7 +238,7 @@ bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
     }
 
     if (node->data.type == NODE_FUNC) {
-        node->right = constant_state_convolution_diff_tree(node->right);
+        node->right = constant_convolution_diff_tree(node->right);
         return node;
     }
 
@@ -215,13 +246,15 @@ bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
         assert(node->left != NULL);
         assert(node->right != NULL);
 
-        bin_tree_elem_t *left = constant_state_convolution_diff_tree(node->left);
-        bin_tree_elem_t *right = constant_state_convolution_diff_tree(node->right);
+        bin_tree_elem_t *left = constant_convolution_diff_tree(node->left);
+        bin_tree_elem_t *right = constant_convolution_diff_tree(node->right);
 
         node->left = left;
         node->right = right;
 
         bin_tree_elem_t *new_node = NULL;
+
+
 
         if (left->constant_state && right->constant_state) {
             assert(left->data.type == NODE_NUM);
@@ -256,14 +289,14 @@ bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
             return new_node;
         }
 
-        return node;
+        return roll_up_null_mult(node);
     }
 
     debug("unknown node_type : {%d}", node->data.type);
     return NULL;
 }
 
-void make_latex_code(FILE *stream, bin_tree_elem_t *node) {
+void write_subtree_to_latex_code(FILE *stream, bin_tree_elem_t *node) {
     assert(node != NULL);
 
     char bufer[MEDIUM_BUFER_SZ] = {};
@@ -286,28 +319,24 @@ void make_latex_code(FILE *stream, bin_tree_elem_t *node) {
 
     if (node->data.type == NODE_OP) {
         if (node->data.value.ival == OP_DIV) {
-            fprintf(stream, "(");
+            fprintf(stream, "\\frac{");
             if (node->left) {
-                make_latex_code(stream, node->left);
+                write_subtree_to_latex_code(stream, node->left);
             }
-            fprintf(stream, ")");
-
-            fprintf(stream, "%s", bufer);
-
-            fprintf(stream, "(");
+            fprintf(stream, "}{");
             if (node->right) {
-                make_latex_code(stream, node->right);
+                write_subtree_to_latex_code(stream, node->right);
             }
-            fprintf(stream, ")");
+            fprintf(stream, "}");
         } else {
             if (node->left) {
-                make_latex_code(stream, node->left);
+                write_subtree_to_latex_code(stream, node->left);
             }
 
             fprintf(stream, "%s", bufer);
 
             if (node->right) {
-                make_latex_code(stream, node->right);
+                write_subtree_to_latex_code(stream, node->right);
             }
         }
 
@@ -316,9 +345,37 @@ void make_latex_code(FILE *stream, bin_tree_elem_t *node) {
 
     if (node->data.type == NODE_FUNC) {
         fprintf(stream, "%s(", bufer);
-        make_latex_code(stream, node->right);
+        write_subtree_to_latex_code(stream, node->right);
         fprintf(stream, ")");
     }
+}
+
+bool make_tex_of_subtree(const char dir[], const char name[], bin_tree_elem_t *root) {
+    assert(dir != NULL);
+    assert(root != NULL);
+
+    char bufer[MEDIUM_BUFER_SZ] = {};
+    snprintf(bufer, MEDIUM_BUFER_SZ, "%s/%s", dir, name);
+
+    FILE *latex_code_file = fopen(bufer, "w");
+    if (!latex_code_file) {
+        debug("can't open : '%s'", bufer);
+        return false;
+    }
+
+    fprintf(latex_code_file, "\\documentclass[12pt]{article}\n\\begin{document}\n");
+    fprintf(latex_code_file, "$");
+    write_subtree_to_latex_code(latex_code_file, root);
+    fprintf(latex_code_file, "$");
+    fprintf(latex_code_file, "\n\\end{document}\n");
+
+    fclose(latex_code_file);
+
+
+    snprintf(bufer, MEDIUM_BUFER_SZ, "cd %s && pdflatex %s", dir, name);
+    system(bufer);
+
+    return true;
 }
 
 int main() {
@@ -340,27 +397,27 @@ int main() {
     // draw_parsing_text(&data);
 
     tree.root = get_G(&data);
-    convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
 
 
-    // tree.root = differentiate(tree.root);
-    tree.root = constant_state_convolution_diff_tree(tree.root);
+
+
+    tree.root = differentiate(tree.root);
+
+    // convert_subtree_to_dot(tree.root, &dot_code, &storage);
+    tree.root = constant_convolution_diff_tree(tree.root);
     tree.root = neutrals_remove_diff_tree(tree.root);
-
     convert_subtree_to_dot(tree.root, &dot_code, &storage);
+
+
+
+
 
 
 
     printf("infix: '"); write_infix(tree.root); printf("'\n");
 
-
-    FILE *latex_code_file = fopen("./code.tex", "w");
-    make_latex_code(latex_code_file, tree.root);
-    fclose(latex_code_file);
-
-
-
+    make_tex_of_subtree("./latex", "code.tex", tree.root);
 
 
 

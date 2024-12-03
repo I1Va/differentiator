@@ -1,1 +1,1 @@
-sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1)
+sin(x) * cos(x) / (4 * 1 + ln(x) * ln(x))

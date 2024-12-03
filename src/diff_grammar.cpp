@@ -181,6 +181,9 @@ bin_tree_elem_t *get_T(parsing_block_t *data) {
     return val;
 }
 
+// there is should be pow grammar rule
+
+
 bin_tree_elem_t *get_P(parsing_block_t *data) {
     assert(data != NULL);
 

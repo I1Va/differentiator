@@ -331,3 +331,61 @@ void node_dump(FILE *log_file, bin_tree_elem_t *node) {
 
     fprintf(log_file, "}\n");
 }
+
+void write_infix(bin_tree_elem_t *node) {
+    assert(node != NULL);
+
+    char bufer[MEDIUM_BUFER_SZ] = {};
+    get_node_string(bufer, node);
+
+    if (node->data.type == NODE_VAR) {
+        printf("%s", bufer);
+        return;
+    }
+
+    if (node->data.type == NODE_NUM) {
+
+        if (node->data.value.lval < 0) {
+            printf("(%s)", bufer);
+        } else {
+            printf("%s", bufer);
+        }
+        return;
+    }
+
+    if (node->data.type == NODE_OP) {
+        if (node->data.value.ival == OP_DIV) {
+            printf("(");
+            if (node->left) {
+                write_infix(node->left);
+            }
+            printf(")");
+
+            printf("%s", bufer);
+
+            printf("(");
+            if (node->right) {
+                write_infix(node->right);
+            }
+            printf(")");
+        } else {
+            if (node->left) {
+                write_infix(node->left);
+            }
+
+            printf("%s", bufer);
+
+            if (node->right) {
+                write_infix(node->right);
+            }
+        }
+
+        return;
+    }
+
+    if (node->data.type == NODE_FUNC) {
+        printf("%s(", bufer);
+        write_infix(node->right);
+        printf(")");
+    }
+}

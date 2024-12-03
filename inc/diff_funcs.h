@@ -45,5 +45,7 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
 int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage_t **storage);
 bool convert_tree_to_dot(bin_tree_t *tree, dot_code_t *dot_code, str_storage_t **storage);
 void node_dump(FILE *log_file, bin_tree_elem_t *node);
+bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node);
+void write_infix(bin_tree_elem_t *node);
 
 #endif // DIFF_FUNCS_H

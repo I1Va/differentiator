@@ -107,7 +107,9 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     return new_node;
 }
 
-bin_tree_elem_t *neutrals_remote_diff_tree(bin_tree_elem_t *node) {
+bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node) {
+    assert(node != NULL);
+
     if (node->data.type == NODE_NUM) {
         return node;
     }
@@ -116,57 +118,66 @@ bin_tree_elem_t *neutrals_remote_diff_tree(bin_tree_elem_t *node) {
     }
 
     if (node->data.type == NODE_FUNC) {
-        return neutrals_remote_diff_tree(node->right);
+        node->right = neutrals_remove_diff_tree(node->right);
+        return node;
     }
+
     if (node->data.type == NODE_OP) {
         assert(node->left != NULL);
         assert(node->right != NULL);
 
-        bin_tree_elem_t *left = neutrals_remote_diff_tree(node->left);
-        bin_tree_elem_t *right = neutrals_remote_diff_tree(node->right);
+        bin_tree_elem_t *left = neutrals_remove_diff_tree(node->left);
+        bin_tree_elem_t *right = neutrals_remove_diff_tree(node->right);
 
-        assert(left != NULL);
-        assert(right != NULL);
+        node->left = left;
+        node->right = right;
+
+        if (left == 0) {
+            node_dump(stdout, node);
+            assert(0);
+        }
 
 
-        bin_tree_elem_t *new_node = node;
+        bin_tree_elem_t *new_node = NULL;
 
         if (node->data.value.ival == OP_MUL) {
             if (left->data.type == NODE_NUM && left->data.value.lval == 1) {
                 new_node = right;
-                // FREE(left);
-                // FREE(node)
+                FREE(left);
+                FREE(node)
             } else if (right->data.type == NODE_NUM && right->data.value.lval == 1) {
                 new_node = left;
-                // FREE(right);
-                // FREE(node);
+                FREE(right);
+                FREE(node);
+            } else {
+                new_node = node;
             }
             return new_node;
         }
-        // else if (node->data.value.ival == OP_ADD) {
-        //     new_node = _NUM(left->data.value.lval + right->data.value.lval);
-        //     FREE(left);
-        //     FREE(right);
-        //     FREE(node)
-        // } else if (node->data.value.ival == OP_DIV) {
-        //     assert(right->data.value.lval != 0);
+        if (node->data.value.ival == OP_ADD) {
+            if (left->data.type == NODE_NUM && left->data.value.lval == 0) {
+                new_node = right;
+                FREE(left);
+                FREE(node)
+            } else if (right->data.type == NODE_NUM && right->data.value.lval == 0) {
+                new_node = left;
+                FREE(right);
+                FREE(node);
+            } else {
+                new_node = node;
+            }
+            return new_node;
+        }
 
-        //     new_node = _NUM(left->data.value.lval / right->data.value.lval);
-        //     FREE(left);
-        //     FREE(right);
-        //     FREE(node)
-        // } else if (node->data.value.ival == OP_SUB) {
-        //     new_node = _NUM(left->data.value.lval - right->data.value.lval);
-        //     FREE(left);
-        //     FREE(right);
-        //     FREE(node)
-        // }
     }
 
-    return node;
+    debug("unknown node_type : {%d}", node->data.type);
+    return NULL;
 }
 
 bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
+    assert(node != NULL);
+
     if (node->data.type == NODE_NUM) {
         node->constant_state = true;
         return node;
@@ -187,6 +198,8 @@ bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
         bin_tree_elem_t *left = constant_state_convolution_diff_tree(node->left);
         bin_tree_elem_t *right = constant_state_convolution_diff_tree(node->right);
 
+        node->left = left;
+        node->right = right;
 
         bin_tree_elem_t *new_node = NULL;
 
@@ -216,80 +229,18 @@ bin_tree_elem_t *constant_state_convolution_diff_tree(bin_tree_elem_t *node) {
                 FREE(left);
                 FREE(right);
                 FREE(node)
+            } else {
+                debug("unknown op {%d}", node->data.value.ival);
             }
             new_node->constant_state = true;
             return new_node;
         }
+
         return node;
     }
 
-
-
     debug("unknown node_type : {%d}", node->data.type);
-    return node;
-}
-
-void write_infix(bin_tree_elem_t *node) {
-
-    char bufer[MEDIUM_BUFER_SZ] = {};
-    get_node_string(bufer, node);
-
-    if (node->data.type == NODE_VAR) {
-        printf("%s", bufer);
-        return;
-    }
-
-    if (node->data.type == NODE_NUM) {
-
-        if (node->data.value.lval < 0) {
-            printf("(%s)", bufer);
-        } else {
-            printf("%s", bufer);
-        }
-        return;
-    }
-
-    if (node->data.type == NODE_OP) {
-        if (node->data.value.ival == OP_DIV) {
-            printf("(");
-            if (node->left) {
-                write_infix(node->left);
-            }
-            printf(")");
-
-            printf("%s", bufer);
-
-            printf("(");
-            if (node->right) {
-                write_infix(node->right);
-            }
-            printf(")");
-        } else {
-            if (node->left) {
-                write_infix(node->left);
-            }
-
-            printf("%s", bufer);
-
-            if (node->right) {
-                write_infix(node->right);
-            }
-        }
-
-        return;
-    }
-
-    if (node->data.type == NODE_FUNC) {
-        printf("%s(", bufer);
-        write_infix(node->right);
-        printf(")");
-    }
-
-
-
-
-
-
+    return NULL;
 }
 
 int main() {
@@ -311,17 +262,18 @@ int main() {
     // draw_parsing_text(&data);
 
     tree.root = get_G(&data);
-
+    convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
 
 
     // tree.root = differentiate(tree.root);
-    // tree.root = constant_state_convolution_diff_tree(tree.root);
-    tree.root = neutrals_remote_diff_tree(tree.root);
-
-
+    tree.root = constant_state_convolution_diff_tree(tree.root);
+    tree.root = neutrals_remove_diff_tree(tree.root);
 
     convert_subtree_to_dot(tree.root, &dot_code, &storage);
+
+
+
     write_infix(tree.root);
 
     // convert_tree_to_dot(&tree, &dot_code, &storage); // FIXME:

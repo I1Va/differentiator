@@ -191,7 +191,7 @@ bin_tree_elem_t *diff_load_infix_expr(bin_tree_t *tree, bin_tree_elem_t *prev, b
     return node;
 }
 
-size_t put_node_in_dotcode(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage_t **storage) {
+int put_node_in_dotcode(bin_tree_elem_t *node, dot_code_t *dot_code, str_storage_t **storage) {
     assert(dot_code != NULL);
     assert(storage != NULL);
     assert(node != NULL);
@@ -204,7 +204,7 @@ size_t put_node_in_dotcode(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
     snprintf(label, label_sz, "{'%s' | {<L> (L)| <R> (R)}}", bufer);
     // printf("label : [%s]\n", label);
 
-    size_t node_idx = dot_new_node(dot_code, DEFAULT_NODE_PARS, label);
+    int node_idx = dot_new_node(dot_code, DEFAULT_NODE_PARS, label);
 
     if (node->data.type == NODE_VAR) {
         dot_code->node_list[node_idx].pars.fillcolor = VAR_COLOR;
@@ -224,24 +224,40 @@ int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
     assert(storage != NULL);
     assert(node != NULL);
 
-    size_t node_idx = put_node_in_dotcode(node, dot_code, storage);
+    int node_idx = put_node_in_dotcode(node, dot_code, storage);
 
     int left_son_idx = -1;
     int right_son_idx = -1;
 
     if (node->left) {
         left_son_idx = convert_subtree_to_dot(node->left, dot_code, storage);
+        if (left_son_idx == -1) {
+            debug("dot_code overflow");
+            return -1;
+        }
     }
     if (node->right) {
         right_son_idx = convert_subtree_to_dot(node->right, dot_code, storage);
+        if (right_son_idx == -1) {
+            debug("dot_code overflow");
+            return -1;
+        }
     }
 
     if (left_son_idx != -1) {
-        size_t left_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) left_son_idx, DEFAULT_EDGE_PARS, "");
+        int left_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) left_son_idx, DEFAULT_EDGE_PARS, "");
+        if (left_edge_idx == -1) {
+            debug("dot_code overflow");
+            return -1;
+        }
         dot_code->edge_list[left_edge_idx].pars.start_suf = "L";
     }
     if (right_son_idx != -1) {
-        size_t right_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) right_son_idx, DEFAULT_EDGE_PARS, "");
+        int right_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) right_son_idx, DEFAULT_EDGE_PARS, "");
+        if (right_edge_idx == -1) {
+            debug("dot_code overflow");
+            return -1;
+        }
         dot_code->edge_list[right_edge_idx].pars.start_suf = "R";
     }
 

@@ -92,7 +92,7 @@ struct defer_node {
     bin_tree_elem_t *ptr;
 };
 
-size_t defer_threshold = 4;
+size_t defer_threshold = 10;
 
 size_t cur_subtree_sz = 0;
 
@@ -107,12 +107,22 @@ size_t def_coef_get(size_t tree_sz) {
     // return tree_sz / 4;
 }
 
-size_t defer_check(size_t subtree_size, size_t coeff) {
-    if (subtree_size < defer_threshold) {
-        return false;
+bool defer_check(size_t subtree_size, size_t tree_sz) {
+    // return (subtree_size > 10 && subtree_size < 15);
+    printf("tree_sz : %lu\n", tree_sz);
+    int a = (int) subtree_size;
+    int b = (int) sqrt((double) tree_sz);
+    if (b > 20) {
+        b = 20;
     }
 
-    return subtree_size > coeff / 4 && subtree_size < coeff / 2;
+    return (abs(a - b) < 3);
+    // if (subtree_size < defer_threshold) {
+    //     return false;
+    // }
+    // size_t coeff = def_coef_get(tree_sz);
+
+    // return subtree_size > coeff / 4 && subtree_size < coeff / 2;
 }
 
 void write_subtree(FILE *stream, bin_tree_elem_t *node) {
@@ -121,8 +131,10 @@ void write_subtree(FILE *stream, bin_tree_elem_t *node) {
     char bufer[MEDIUM_BUFER_SZ] = {};
     get_node_string(bufer, node);
 
-    printf("sz : %lu\n", node->sub_tree_sz);
-    if (defer_check(node->sub_tree_sz, def_coef_get(cur_subtree_sz))) {
+
+    if (defer_check(node->sub_tree_sz, cur_subtree_sz)) {
+        printf("sz : %lu\n", node->sub_tree_sz);
+
         defer_list[def_idx].letter = letter;
         defer_list[def_idx].letter_idx = letter_idx;
         defer_list[def_idx].ptr = node;
@@ -281,22 +293,22 @@ int main() {
 
 
 
-    tree.root = constant_convolution_diff_tree(tree.root);
-    tree.root = neutrals_remove_diff_tree(tree.root);
+    // tree.root = constant_convolution_diff_tree(tree.root);
+    // tree.root = neutrals_remove_diff_tree(tree.root);
 
     convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
 
 
 
-    printf("infix: '"); write_infix(tree.root); printf("'\n");
+    // printf("infix: '"); write_infix(tree.root); printf("'\n");
 
 
-    place_subtrees_sz(tree.root); write_expression_to_tex(&tex_dir, tree.root);
+    // place_subtrees_sz(tree.root); write_expression_to_tex(&tex_dir, tree.root);
 
 
 
-    tex_generate_pdf(&tex_dir);
+    // tex_generate_pdf(&tex_dir);
     dot_code_render(&dot_dir, &dot_code);
     bin_tree_dtor(&tree);
     sub_tree_dtor(tree.root);

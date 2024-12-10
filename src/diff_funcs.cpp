@@ -224,7 +224,7 @@ int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
     assert(storage != NULL);
     assert(node != NULL);
 
-    int node_idx = put_node_in_dotcode(node, dot_code, storage);
+    node->graphviz_idx = put_node_in_dotcode(node, dot_code, storage);
 
     int left_son_idx = -1;
     int right_son_idx = -1;
@@ -245,7 +245,7 @@ int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
     }
 
     if (left_son_idx != -1) {
-        int left_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) left_son_idx, DEFAULT_EDGE_PARS, "");
+        int left_edge_idx = dot_new_edge(dot_code, (size_t) node->graphviz_idx, (size_t) left_son_idx, DEFAULT_EDGE_PARS, "");
         if (left_edge_idx == -1) {
             debug("dot_code overflow");
             return -1;
@@ -253,7 +253,7 @@ int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
         dot_code->edge_list[left_edge_idx].pars.start_suf = "L";
     }
     if (right_son_idx != -1) {
-        int right_edge_idx = dot_new_edge(dot_code, (size_t) node_idx, (size_t) right_son_idx, DEFAULT_EDGE_PARS, "");
+        int right_edge_idx = dot_new_edge(dot_code, (size_t) node->graphviz_idx, (size_t) right_son_idx, DEFAULT_EDGE_PARS, "");
         if (right_edge_idx == -1) {
             debug("dot_code overflow");
             return -1;
@@ -261,7 +261,7 @@ int convert_subtree_to_dot(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
         dot_code->edge_list[right_edge_idx].pars.start_suf = "R";
     }
 
-    return (int) node_idx;
+    return (int) node->graphviz_idx;
 }
 
 bool convert_tree_to_dot(bin_tree_t *tree, dot_code_t *dot_code, str_storage_t **storage) {

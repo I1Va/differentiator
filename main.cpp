@@ -95,7 +95,7 @@ struct defer_node {
 size_t defer_threshold = 10;
 
 size_t cur_subtree_sz = 0;
-
+dot_code_t dot_code = {};
 defer_node defer_list[BUFSIZ] = {};
 size_t def_idx = 0;
 
@@ -116,7 +116,7 @@ bool defer_check(size_t subtree_size, size_t tree_sz) {
         b = 20;
     }
 
-    return (abs(a - b) < 3);
+    return (abs(a - 50) < 20);
     // if (subtree_size < defer_threshold) {
     //     return false;
     // }
@@ -133,7 +133,8 @@ void write_subtree(FILE *stream, bin_tree_elem_t *node) {
 
 
     if (defer_check(node->sub_tree_sz, cur_subtree_sz)) {
-        printf("sz : %lu\n", node->sub_tree_sz);
+        printf("sz: %lu, graphviz_idx = {%d}\n", node->sub_tree_sz, node->graphviz_idx);
+        dot_code.node_list[node->graphviz_idx].pars.fillcolor = "#ff00ff";
 
         defer_list[def_idx].letter = letter;
         defer_list[def_idx].letter_idx = letter_idx;
@@ -238,8 +239,6 @@ bool make_tex_of_subtree(tex_dir_t *tex_dir, bin_tree_elem_t *root) {
 }
 
 
-
-
 void write_expression_to_tex(tex_dir_t *tex_dir, bin_tree_elem_t *root) {
     assert(root);
     // fprintf(tex_dir->code_file_ptr, "%c%lu = \n", letter, letter_idx++);
@@ -270,9 +269,9 @@ void write_expression_to_tex(tex_dir_t *tex_dir, bin_tree_elem_t *root) {
 int main() {
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
     str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
-
+    dot_code_t_ctor(&dot_code, LIST_DOT_CODE_PARS);
     dot_dir_t dot_dir = {}; dot_dir_ctor(&dot_dir, DOT_DIR_PATH, DOT_FILE_NAME, DOT_IMG_NAME);
-    dot_code_t dot_code = {}; dot_code_t_ctor(&dot_code, LIST_DOT_CODE_PARS);
+
     bin_tree_t tree = {};
     bin_tree_ctor(&tree, LOG_FILE_PATH);
     tex_dir_t tex_dir = {}; tex_dir_ctor(&tex_dir, "latex", "code.tex");
@@ -290,13 +289,14 @@ int main() {
 
 
     tree.root = differentiate(tree.root);
+    convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
 
 
     // tree.root = constant_convolution_diff_tree(tree.root);
     // tree.root = neutrals_remove_diff_tree(tree.root);
 
-    convert_subtree_to_dot(tree.root, &dot_code, &storage);
+
 
 
 
@@ -304,11 +304,11 @@ int main() {
     // printf("infix: '"); write_infix(tree.root); printf("'\n");
 
 
-    // place_subtrees_sz(tree.root); write_expression_to_tex(&tex_dir, tree.root);
+    place_subtrees_sz(tree.root); write_expression_to_tex(&tex_dir, tree.root);
 
 
 
-    // tex_generate_pdf(&tex_dir);
+    tex_generate_pdf(&tex_dir);
     dot_code_render(&dot_dir, &dot_code);
     bin_tree_dtor(&tree);
     sub_tree_dtor(tree.root);

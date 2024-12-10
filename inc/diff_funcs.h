@@ -20,10 +20,11 @@ const size_t MAX_NODE_WRAP_SZ = 64;
 
 
 enum node_types {
-    NODE_VAR = 0,
-    NODE_NUM = 1,
-    NODE_OP = 2,
-    NODE_FUNC = 3,
+    NODE_EMPTY = 0,
+    NODE_VAR = 1,
+    NODE_NUM = 2,
+    NODE_OP = 3,
+    NODE_FUNC = 4,
 };
 
 
@@ -47,11 +48,8 @@ bool convert_tree_to_dot(bin_tree_t *tree, dot_code_t *dot_code, str_storage_t *
 void node_dump(FILE *log_file, bin_tree_elem_t *node);
 bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node);
 void write_infix(bin_tree_elem_t *node);
-bin_tree_elem_t *differentiate(bin_tree_elem_t *node);
 bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node);
 bin_tree_elem_t *roll_up_null_mult(bin_tree_elem_t *node);
 bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node);
-void write_subtree_to_latex_code(FILE *stream, bin_tree_elem_t *node);
-bool make_tex_of_subtree(const char dir[], const char name[], bin_tree_elem_t *root);
 
 #endif // DIFF_FUNCS_H

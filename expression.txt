@@ -1,1 +1,1 @@
-sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1)
+sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1) / x / x / x / x * cos(x) * (52 + 2 + 3 + 2) / cos(x) / cos(2006) * x * x * 13

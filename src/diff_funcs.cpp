@@ -198,7 +198,6 @@ size_t put_node_in_dotcode(bin_tree_elem_t *node, dot_code_t *dot_code, str_stor
 
     char bufer[MEDIUM_BUFER_SZ] = {};
     get_node_string(bufer, node);
-    // printf("bufer : '%s'\n", bufer);
 
     size_t label_sz = MAX_NODE_WRAP_SZ + strlen(bufer);
     char *label = get_new_str_ptr(storage, label_sz);
@@ -320,7 +319,7 @@ void node_dump(FILE *log_file, bin_tree_elem_t *node) {
 
     fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "prev_");
     get_node_string(bufer, node->prev);
-    // fprintf(log_file, " = ([%p]; '%s')\n", node->prev, bufer);
+    fprintf(log_file, " = ([%p]; '%s')\n", node->prev, bufer);
 
     fprintf_str_block(log_file, indent_sz, dot_code_pars_block_sz, "is_left_son_");
     fprintf(log_file, " = (%d)\n", node->is_node_left_son);
@@ -388,71 +387,6 @@ void write_infix(bin_tree_elem_t *node) {
         write_infix(node->right);
         printf(")");
     }
-}
-
-bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
-    assert(node != NULL);
-
-    bin_tree_elem_t *new_node  = NULL;
-
-    if (node->data.type == NODE_VAR) {
-        FREE(node);
-        return _NUM(1);
-    } else if (node->data.type == NODE_NUM) {
-        FREE(node);
-        return _NUM(0);
-    } else if (node->data.type == NODE_OP) {
-        if (node->data.value.ival == OP_ADD) {
-            new_node = _ADD(differentiate(node->left), differentiate(node->right));
-        } else if (node->data.value.ival == OP_SUB) {
-            new_node = _SUB(differentiate(node->left), differentiate(node->right));
-        } else if (node->data.value.ival == OP_MUL) {
-
-            bin_tree_elem_t *left_copy = get_tree_copy(node->left);
-            bin_tree_elem_t *right_copy = get_tree_copy(node->right);
-            bin_tree_elem_t *left_diff = differentiate(left_copy);
-            bin_tree_elem_t *right_diff = differentiate(right_copy);
-
-            new_node =
-            _ADD(
-                _MUL(left_diff, node->right),
-                _MUL(right_diff, node->left)
-            );
-        } else if (node->data.value.ival == OP_DIV) {
-            bin_tree_elem_t *left_copy = get_tree_copy(node->left);
-            bin_tree_elem_t *right_copy = get_tree_copy(node->right);
-            bin_tree_elem_t *left_diff = differentiate(left_copy);
-            bin_tree_elem_t *right_diff = differentiate(right_copy);
-
-            new_node = _DIV
-            (
-                _SUB(_MUL(left_diff, node->right), _MUL(node->left, right_diff)),
-                _MUL(get_tree_copy(node->right), get_tree_copy(node->right))
-            );
-        }
-    } else if (node->data.type == NODE_FUNC) {
-        if (strcmp(node->data.value.sval, "sin") == 0) {
-            new_node = _MUL(differentiate(get_tree_copy(node->right)), _FUNC(node->right, "cos"));
-        } else if (strcmp(node->data.value.sval, "cos") == 0) {
-            new_node = _MUL(differentiate(get_tree_copy(node->right)), _MUL(_NUM(-1), _FUNC(node->right, "sin")));
-        } else if (strcmp(node->data.value.sval, "ln") == 0) {
-            new_node = _MUL(differentiate(get_tree_copy(node->right)), _DIV(_NUM(1), node->right));
-        } else if (strcmp(node->data.value.sval, "sqrt") == 0) {
-            new_node = _MUL(differentiate(node->right), _DIV(_NUM(1), _MUL(_NUM(2), get_tree_copy(node))));
-        } else if (strcmp(node->data.value.sval, "tg") == 0) {
-            new_node = _MUL(differentiate(node->right), _DIV(_NUM(1),
-                _MUL(_FUNC(get_tree_copy(node->right), "cos"), _FUNC(get_tree_copy(node->right), "cos"))));
-        } else if (strcmp(node->data.value.sval, "ctg") == 0) {
-            new_node = _MUL(differentiate(node->right), _DIV(_NUM(-1),
-                _MUL(_FUNC(get_tree_copy(node->right), "sin"), _FUNC(get_tree_copy(node->right), "sin"))));
-        } else if (strcmp(node->data.value.sval, "arcsin") == 0) {
-            bin_tree_elem_t *radical_node = _SUB(_NUM(1), _MUL(get_tree_copy(node->right), get_tree_copy(node->right)));
-            new_node = _MUL(differentiate(node->right), _DIV(_NUM(1), _FUNC(radical_node, "sqrt")));
-        }
-    }
-
-    FREE(node);
-    return new_node;
 }
 
 bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node) {
@@ -641,100 +575,4 @@ bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node) {
 
     debug("unknown node_type : {%d}", node->data.type);
     return NULL;
-}
-
-void write_subtree_to_latex_code(FILE *stream, bin_tree_elem_t *node) {
-    assert(node != NULL);
-
-    char bufer[MEDIUM_BUFER_SZ] = {};
-    get_node_string(bufer, node);
-
-    if (node->data.type == NODE_VAR) {
-        fprintf(stream, "%s", bufer);
-        return;
-    }
-
-    if (node->data.type == NODE_NUM) {
-
-        if (node->data.value.lval < 0) {
-            fprintf(stream, "(%s)", bufer);
-        } else {
-            fprintf(stream, "%s", bufer);
-        }
-        return;
-    }
-
-    if (node->data.type == NODE_OP) {
-        if (node->data.value.ival == OP_DIV) {
-            fprintf(stream, "\\frac{");
-            if (node->left) {
-                write_subtree_to_latex_code(stream, node->left);
-            }
-            fprintf(stream, "}{");
-            if (node->right) {
-                write_subtree_to_latex_code(stream, node->right);
-            }
-            fprintf(stream, "}");
-        } else {
-            bool left_const_state = (node->left->data.type == NODE_NUM);
-            bool right_const_state = (node->right->data.type == NODE_NUM);
-
-            bool left_var_state = (node->left->data.type == NODE_VAR);
-            bool right_var_state = (node->right->data.type == NODE_VAR);
-
-            if (left_const_state && right_var_state) {
-                write_subtree_to_latex_code(stream, node->left);
-                write_subtree_to_latex_code(stream, node->right);
-            } else if (right_const_state && left_var_state) {
-                write_subtree_to_latex_code(stream, node->right);
-                write_subtree_to_latex_code(stream, node->left);
-            } else {
-                if (node->left) {
-                    write_subtree_to_latex_code(stream, node->left);
-                }
-
-                fprintf(stream, "%s", bufer);
-
-                if (node->right) {
-                    write_subtree_to_latex_code(stream, node->right);
-                }
-            }
-        }
-
-        return;
-    }
-
-    if (node->data.type == NODE_FUNC) {
-        fprintf(stream, "%s(", bufer);
-        write_subtree_to_latex_code(stream, node->right);
-        fprintf(stream, ")");
-    }
-}
-
-bool make_tex_of_subtree(const char dir[], const char name[], bin_tree_elem_t *root) {
-    assert(dir != NULL);
-    assert(root != NULL);
-
-    char bufer[MEDIUM_BUFER_SZ] = {};
-    snprintf(bufer, MEDIUM_BUFER_SZ, "%s/%s", dir, name);
-
-    FILE *latex_code_file = fopen(bufer, "w");
-    if (!latex_code_file) {
-        debug("can't open : '%s'", bufer);
-        return false;
-    }
-
-    fprintf(latex_code_file, "\\documentclass[12pt]{article}\n\\begin{document}\n");
-    fprintf(latex_code_file, "$");
-    write_subtree_to_latex_code(latex_code_file, root);
-    fprintf(latex_code_file, "$");
-    fprintf(latex_code_file, "\n\\end{document}\n");
-
-    fclose(latex_code_file);
-
-
-    snprintf(bufer, MEDIUM_BUFER_SZ, "cd %s && pdflatex %s", dir, name);
-    system(bufer);
-
-    return true;
 }

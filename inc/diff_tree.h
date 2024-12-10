@@ -71,6 +71,7 @@ struct bin_tree_elem_t {
     void *tree;
     int graphviz_idx;
     bool constant_state;
+    size_t sub_tree_sz;
 };
 
 typedef bin_tree_elem_t* stack_elem_t;
@@ -95,5 +96,6 @@ bin_tree_elem_t *get_tree_copy(bin_tree_elem_t *root);
 void sub_tree_dtor(bin_tree_elem_t *root);
 void mark_subtree(bin_tree_elem_t *root, bin_tree_t *tree);
 void bin_tree_dtor(bin_tree_t *tree);
+size_t place_subtrees_sz(bin_tree_elem_t *root);
 
 #endif // DIFF_TREE_H

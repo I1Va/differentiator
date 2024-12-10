@@ -248,3 +248,17 @@ void mark_subtree(bin_tree_elem_t *root, bin_tree_t *tree) {
         mark_subtree(root->right, tree);
     }
 }
+
+size_t place_subtrees_sz(bin_tree_elem_t *root) {
+    assert(root);
+
+    root->sub_tree_sz = 1;
+
+    if (root->left) {
+        root->sub_tree_sz += place_subtrees_sz(root->left);
+    }
+    if (root->right) {
+        root->sub_tree_sz += place_subtrees_sz(root->right);
+    }
+    return root->sub_tree_sz;
+}

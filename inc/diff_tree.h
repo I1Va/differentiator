@@ -72,6 +72,7 @@ struct bin_tree_elem_t {
     int graphviz_idx;
     bool constant_state;
     size_t sub_tree_sz;
+    size_t sup_tree_divop_cnt;
 };
 
 typedef bin_tree_elem_t* stack_elem_t;

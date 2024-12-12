@@ -16,6 +16,5 @@ void tex_start_code(tex_dir_t *tex_dir);
 void tex_close_code(tex_dir_t *tex_dir);
 void tex_generate_pdf(tex_dir_t *tex_dir);
 void latex_insert_phrase(tex_dir_t *tex_dir);
-bool make_tex_of_subtree(tex_dir_t *tex_dir, bin_tree_elem_t *root);
 
 #endif // TEX_FUNCS_H

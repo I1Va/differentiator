@@ -111,7 +111,7 @@ void lex_scanner(parsing_block_t *data) {
 
     while (1) {
         token_t token = next_token(data);
-        if (token.token_type != LEX_SPACE) {
+        if (token.token_type != LEX_SPACE && token.token_type != LEX_EOL) {
             data->token_list[token_idx++] = token;
         }
         if (token.token_type == LEX_EOF) {

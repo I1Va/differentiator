@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "general.h"
 #include "diff_tree.h"
 #include "diff_funcs.h"
 #include "error_processing.h"
 #include "stack_funcs.h"
 #include "string_funcs.h"
-#include "general.h"
 #include "diff_DSL.h"
 
 const char VAR_COLOR[] = "#d56050";
@@ -591,4 +591,93 @@ bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node) {
 
     debug("unknown node_type : {%d}", node->data.type);
     return NULL;
+}
+
+defer_info_t defer_info_t_ctor(dot_code_t *dot_code) {
+    defer_info_t defer_info = {};
+    defer_info.tree_scale_val = 0.0;
+    defer_info.dot_code = dot_code;
+    defer_info.def_list_idx = 0;
+
+    defer_info.letter = 'A';
+    defer_info.letter_idx = 0;
+
+    defer_info.defer_state = true;
+    defer_info.defer_lowerbound = DEFER_LOWERBOUND;
+    defer_info.low_delta = DEFER_LOW_DELTA;
+    defer_info.high_delta = DEFER_HIGH_DELTA;
+
+    return defer_info;
+}
+
+double def_coef_get(double scale_val) {
+    return (int) (scale_val * 0.7);
+}
+
+double calc_subtree_scale_val(subtree_info_t info) {
+    return (int) info.height;
+}
+
+bool defer_check(bin_tree_elem_t *node, defer_info_t *defer_info) {
+    if (!defer_info->defer_state) {
+        return false;
+    }
+
+    double node_scale_val = calc_subtree_scale_val(node->subtree_info);
+    double tree_scale_val = defer_info->tree_scale_val;
+
+    double proportion = node_scale_val / tree_scale_val;
+
+    if (node_scale_val < DEFER_LOWERBOUND) {
+        return false;
+    }
+
+    return (proportion > DEFER_LOW_DELTA && proportion < DEFER_HIGH_DELTA);
+}
+
+subtree_info_t get_node_info(bin_tree_elem_t *root) {
+    subtree_info_t info = {};
+
+    info.sz = 1;
+    info.height = 1;
+    if (root->data.type == NODE_OP && root->data.value.ival == OP_DIV) {
+        info.divop_cnt = 1;
+    }
+    if (root->data.type == NODE_OP && root->data.value.ival == OP_ADD) {
+        info.addop_cnt = 1;
+    }
+    if (root->data.type == NODE_OP && root->data.value.ival == OP_SUB) {
+        info.subop_cnt = 1;
+    }
+    if (root->data.type == NODE_OP && root->data.value.ival == OP_MUL) {
+        info.mulop_cnt = 1;
+    }
+
+    return info;
+}
+
+void merge_subtrees_info(subtree_info_t *dest, subtree_info_t src) {
+    dest->addop_cnt += src.addop_cnt;
+    dest->divop_cnt += src.divop_cnt;
+    dest->mulop_cnt += src.mulop_cnt;
+    dest->subop_cnt += src.subop_cnt;
+
+    dest->sz += src.sz;
+
+    dest->height = MAX(dest->height, src.height + 1);
+}
+
+void collect_tree_info(bin_tree_elem_t *root) {
+    assert(root);
+
+    root->subtree_info = get_node_info(root);
+
+    if (root->left) {
+        collect_tree_info(root->left);
+        merge_subtrees_info(&root->subtree_info, root->left->subtree_info);
+    }
+    if (root->right) {
+        collect_tree_info(root->right);
+        merge_subtrees_info(&root->subtree_info, root->right->subtree_info);
+    }
 }

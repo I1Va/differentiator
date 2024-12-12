@@ -59,6 +59,15 @@ struct bin_tree_elem_value_t {
     multi_val_t value;
 };
 
+struct subtree_info_t {
+    size_t sz;
+    size_t divop_cnt;
+    size_t addop_cnt;
+    size_t subop_cnt;
+    size_t mulop_cnt;
+    size_t height;
+};
+
 struct bin_tree_elem_t {
     bin_tree_elem_t *prev;
     bool is_node_left_son;
@@ -71,8 +80,8 @@ struct bin_tree_elem_t {
     void *tree;
     int graphviz_idx;
     bool constant_state;
-    size_t sub_tree_sz;
-    size_t sup_tree_divop_cnt;
+
+    subtree_info_t subtree_info;
 };
 
 typedef bin_tree_elem_t* stack_elem_t;

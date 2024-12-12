@@ -18,6 +18,30 @@ const size_t MEDIUM_BUFER_SZ = 128;
 const size_t CHUNK_SIZE = 2048;
 const size_t MAX_NODE_WRAP_SZ = 64;
 
+const double DEFER_LOWERBOUND = 5;
+const double DEFER_LOW_DELTA = 0.5;
+const double DEFER_HIGH_DELTA = 0.8;
+
+struct defer_node_t {
+    char letter;
+    int letter_idx;
+    bin_tree_elem_t *ptr;
+};
+
+struct defer_info_t {
+    char letter;
+    bool defer_state;
+    double defer_lowerbound;
+    double low_delta;
+    double high_delta;
+    dot_code_t *dot_code;
+
+    double tree_scale_val;
+    defer_node_t def_list[BUFSIZ];
+    size_t def_list_idx;
+
+    int letter_idx;
+};
 
 enum node_types {
     NODE_EMPTY = 0,
@@ -51,5 +75,12 @@ void write_infix(bin_tree_elem_t *node);
 bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node);
 bin_tree_elem_t *roll_up_null_mult(bin_tree_elem_t *node);
 bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node);
+defer_info_t defer_info_t_ctor(dot_code_t *dot_code);
+double def_coef_get(double scale_val);
+double calc_subtree_scale_val(subtree_info_t info);
+bool defer_check(bin_tree_elem_t *node, defer_info_t *defer_info);
+subtree_info_t get_node_info(bin_tree_elem_t *root);
+void merge_subtrees_info(subtree_info_t *dest, subtree_info_t src);
+void collect_tree_info(bin_tree_elem_t *root);
 
 #endif // DIFF_FUNCS_H

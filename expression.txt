@@ -1,1 +1,12 @@
-sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1) / x / x / x / x * sin(x) * cos(x)
+!\section{introductory work to the Minecraft clan "Matanists"}
+!\subsection{differentiate expression}
+!\textbf{Solution}
+x * x * x
+!\subsection{differentiate expression}
+sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1)
+!\subsection{differentiate expression}
+sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1) / cos(x) * ln(cos(x) / x / x / x)
+!\subsection{differentiate expression}
+x / x / x / x / x / x / x / x / x / x + cos(x) / sin(x) / cos(x) / ln(x) / cos(x) / sin(x)
+!\subsection{differentiate expression}
+sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x)

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <stdio.h>
@@ -86,222 +87,9 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     return new_node;
 }
 
-const int DEFER_LOWERBOUND = 15;
-const int DEFER_UPPERBOUND = 20;
-const int DEFER_DELTA = 10;
-const int DEFER_DIV_COEFF = 4;
-
-struct defer_node_t {
-    char letter;
-    size_t letter_idx;
-    bin_tree_elem_t *ptr;
-};
-
-struct defer_info_t {
-    size_t cur_tree_scale_val;
-    dot_code_t *dot_code;
-    defer_node_t def_list[BUFSIZ];
-    size_t def_list_idx;
-
-    char letter;
-    size_t letter_idx;
-};
-
-defer_info_t defer_info_t_ctor(dot_code_t *dot_code) {
-    defer_info_t defer_info = {};
-    defer_info.cur_tree_scale_val = 0;
-    defer_info.dot_code = dot_code;
-    defer_info.def_list_idx = 0;
-
-    defer_info.letter = 'A';
-    defer_info.letter_idx = 0;
-    return defer_info;
-}
-
-int def_coef_get(size_t tree_sz) {
-    return (int) sqrt((double) tree_sz);
-}
-
-bool defer_check(bin_tree_elem_t *node, defer_info_t *defer_info) {
-    int node_scale_val = (int) (node->sub_tree_sz + node->sup_tree_divop_cnt * DEFER_DIV_COEFF);
-
-    if (node_scale_val < DEFER_LOWERBOUND) {
-        return false;
-    }
-
-    int scale_pattern = MIN((int) DEFER_UPPERBOUND, def_coef_get(defer_info->cur_tree_scale_val));
-
-    return (abs(node_scale_val - scale_pattern) < (int) DEFER_DELTA);
-}
-
-void write_subtree(FILE *stream, bin_tree_elem_t *node, defer_info_t *defer_info) {
-    assert(node != NULL);
-
-    char bufer[MEDIUM_BUFER_SZ] = {};
-    get_node_string(bufer, node);
-
-
-    if (defer_check(node, defer_info)) {
-
-        // printf("sz: %lu, graphviz_idx = {%d}\n", node->sub_tree_sz, node->graphviz_idx);
-        if (defer_info->dot_code) {
-            defer_info->dot_code->node_list[node->graphviz_idx].pars.fillcolor = "#ff00ff";
-        }
-
-        defer_info->def_list[defer_info->def_list_idx].letter = defer_info->letter;
-        defer_info->def_list[defer_info->def_list_idx].letter_idx = defer_info->letter_idx;
-        defer_info->def_list[defer_info->def_list_idx].ptr = node;
-        defer_info->def_list_idx++;
-
-
-        fprintf(stream, "%c%lu", defer_info->letter, defer_info->letter_idx++);
-        return;
-    }
-
-    if (node->data.type == NODE_VAR) {
-        fprintf(stream, "%s", bufer);
-        return;
-    }
-
-    if (node->data.type == NODE_NUM) {
-        if (node->data.value.lval < 0) {
-            fprintf(stream, "(%s)", bufer);
-        } else {
-            fprintf(stream, "%s", bufer);
-        }
-        return;
-    }
-
-    if (node->data.type == NODE_FUNC) {
-        fprintf(stream, "\\%s(", bufer);
-        write_subtree(stream, node->right, defer_info);
-        fprintf(stream, ")");
-    }
-
-    if (node->data.type == NODE_OP) {
-        if (node->data.value.ival == OP_DIV) {
-            fprintf(stream, "\\frac{");
-            if (node->left) {
-                write_subtree(stream, node->left, defer_info);
-            }
-            fprintf(stream, "}{");
-            if (node->right) {
-                write_subtree(stream, node->right, defer_info);
-            }
-            fprintf(stream, "}");
-        } else {
-            bool left_const_state = (node->left->data.type == NODE_NUM);
-            bool right_const_state = (node->right->data.type == NODE_NUM);
-
-            bool left_var_state = (node->left->data.type == NODE_VAR);
-            bool right_var_state = (node->right->data.type == NODE_VAR);
-
-            if (left_const_state && right_var_state) {
-                write_subtree(stream, node->left, defer_info);
-                write_subtree(stream, node->right, defer_info);
-            } else if (right_const_state && left_var_state) {
-                write_subtree(stream, node->right, defer_info);
-                write_subtree(stream, node->left, defer_info);
-            } else {
-                if (node->left) {
-                    write_subtree(stream, node->left, defer_info);
-                }
-
-                if (node->data.value.ival == OP_MUL) {
-                    fprintf(stream, " \\cdot ");
-                } else {
-                    fprintf(stream, " %s ", bufer);
-                }
-
-                if (node->right) {
-                    write_subtree(stream, node->right, defer_info);
-                }
-            }
-        }
-
-        return;
-    }
-}
-
-bool make_tex_of_subtree(tex_dir_t *tex_dir, bin_tree_elem_t *root, defer_info_t defer_info) {
-    assert(tex_dir);
-    assert(root);
-
-    defer_info.cur_tree_scale_val = root->sub_tree_sz + root->sup_tree_divop_cnt * DEFER_DIV_COEFF;
-    defer_info.def_list_idx = 0;
-
-    fprintf(tex_dir->code_file_ptr, "$$");
-    write_subtree(tex_dir->code_file_ptr, root, &defer_info);
-    fprintf(tex_dir->code_file_ptr, "$$ \\\\  \\\\ \n");
-
-    size_t prev_def_idx = defer_info.def_list_idx;
-    defer_info.def_list_idx = 0;
-
-    for (size_t i = 0; i < prev_def_idx; i++) {
-        defer_node_t d_node = defer_info.def_list[i];
-        defer_info.cur_tree_scale_val = d_node.ptr->sub_tree_sz + d_node.ptr->sup_tree_divop_cnt * DEFER_DIV_COEFF;
-
-        fprintf(tex_dir->code_file_ptr, "%c%lu = ", d_node.letter, d_node.letter_idx);
-
-        fprintf(tex_dir->code_file_ptr, "$");
-        write_subtree(tex_dir->code_file_ptr, d_node.ptr, &defer_info);
-        fprintf(tex_dir->code_file_ptr, "$ \\\\ \n");
-    }
-
-    return true;
-}
-
-void collect_tree_info(bin_tree_elem_t *root) {
-    assert(root);
-
-    root->sub_tree_sz = 1;
-    root->sup_tree_divop_cnt = 0;
-
-    if (root->data.type == NODE_OP && root->data.value.ival == OP_DIV) {
-        root->sup_tree_divop_cnt++;
-    }
-
-    if (root->left) {
-        collect_tree_info(root->left);
-        root->sub_tree_sz += root->left->sub_tree_sz;
-        root->sup_tree_divop_cnt += root->left->sup_tree_divop_cnt;
-    }
-    if (root->right) {
-        collect_tree_info(root->right);
-        root->sub_tree_sz += root->right->sub_tree_sz;
-        root->sup_tree_divop_cnt += root->right->sup_tree_divop_cnt;
-    }
-}
-
-void write_expression_to_tex(tex_dir_t *tex_dir, bin_tree_elem_t *root, defer_info_t defer_info) {
-    assert(root);
-    // fprintf(tex_dir->code_file_ptr, "%c%lu = \n", letter, letter_idx++);
-    make_tex_of_subtree(tex_dir, root, defer_info);
-
-    // if (root->left) {
-    //     write_expression_to_tex(tex_dir, root->left);
-    // }
-    // if (root->right) {
-    //     write_expression_to_tex(tex_dir, root->right);
-    // }
-
-    // cnt = 0;
-    // letter = 'A';
-
-    // for (size_t i = 0; i < deferred_subtrees_idx; i++) {
-    //     if (!deferred_subtrees[i].ptr) {
-    //         debug("deferred_subtrees[%lu]->ptr = nullptr", i);
-    //     }
-    //     assert(deferred_subtrees[i].ptr);
-    //     fprintf(stream, "%c = \n", deferred_subtrees[i].letter);
-    //     next_tex_rec_write_node(stream, deferred_subtrees[i].ptr);
-    //     cnt = 0;
-    // }
-}
-
 int main() {
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
-    str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
+    // str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
     dot_code_t dot_code = {}; dot_code_t_ctor(&dot_code, LIST_DOT_CODE_PARS);
     dot_dir_t dot_dir = {}; dot_dir_ctor(&dot_dir, DOT_DIR_PATH, DOT_FILE_NAME, DOT_IMG_NAME);
 
@@ -310,44 +98,57 @@ int main() {
     tex_dir_t tex_dir = {}; tex_dir_ctor(&tex_dir, "latex", "code.tex");
     tex_start_code(&tex_dir);
     token_t token_list[TOKEN_LIST_MAX_SZ] = {};
-
-    parsing_block_t data = {0, text.str_ptr, 0, token_list, &tree, &dot_code, &storage};
-    lex_scanner(&data);
-
-    // draw_parsing_text(&data);
-
-    tree.root = get_G(&data);
-
+    str_t text = {NULL, 0};
+    FILE *expression_file = fopen(EXPRESSION_FILE_PATH, "r");
+    if (expression_file == NULL) {
+        debug("file '%s' open failed", EXPRESSION_FILE_PATH);
+        CLEAR_MEMORY(exit_mark);
+    }
 
 
+    while (getline(&text.str_ptr, &text.len, expression_file) != -1) { // FIXME:
+        if (text.str_ptr[0] == '!') {
+            fprintf(tex_dir.code_file_ptr, "%s", text.str_ptr + 1);
+            continue;
+        }
+
+        defer_info_t defer_info = defer_info_t_ctor(&dot_code);
+        parsing_block_t data = {0, text.str_ptr, 0, token_list, &tree, &dot_code, &storage};
+        lex_scanner(&data);
+        tree.root = get_G(&data);
 
 
-    tree.root = differentiate(tree.root);
-    convert_subtree_to_dot(tree.root, &dot_code, &storage);
+        collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, {});
 
+        latex_insert_phrase(&tex_dir);
 
+        tree.root = differentiate(tree.root);
+        tree.root = constant_convolution_diff_tree(tree.root);
+        tree.root = neutrals_remove_diff_tree(tree.root);
 
-    // tree.root = constant_convolution_diff_tree(tree.root);
-    // tree.root = neutrals_remove_diff_tree(tree.root);
+        convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
-
-
-
-
-
-    // printf("infix: '"); write_infix(tree.root); printf("'\n");
-
-    defer_info_t defer_info = defer_info_t_ctor(&dot_code);
-    collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, defer_info);
-
+        collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, defer_info);
+        FREE(text.str_ptr); // FIXME:
+        text = {NULL, 0};
+        bin_tree_dtor(&tree);
+    }
 
     tex_generate_pdf(&tex_dir);
     dot_code_render(&dot_dir, &dot_code);
-    bin_tree_dtor(&tree);
+
+
     sub_tree_dtor(tree.root);
-    FREE(text.str_ptr)
     str_storage_t_dtor(storage);
     dot_code_t_dtor(&dot_code);
 
-    return 0;
+    return EXIT_SUCCESS;
+
+    exit_mark:
+
+    sub_tree_dtor(tree.root);
+    str_storage_t_dtor(storage);
+    dot_code_t_dtor(&dot_code);
+
+    return EXIT_FAILURE;
 }

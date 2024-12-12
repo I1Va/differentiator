@@ -98,6 +98,7 @@ bin_tree_elem_t *bin_tree_create_node(bin_tree_elem_t *left, bin_tree_elem_t *ri
     node->data = data;
     node->graphviz_idx = -1;
     node->constant_state = false;
+    node->subtree_info = {};
 
     if (left) {
         left->prev = node;

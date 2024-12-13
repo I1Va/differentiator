@@ -1,0 +1,3 @@
+!\section{introductory work to the Minecraft clan "Matanists"}
+!\subsection{differentiate expression}
+sin(x) * cos(x) * (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1)

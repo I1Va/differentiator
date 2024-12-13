@@ -1,7 +1,9 @@
 #include <assert.h>
+#include <cstdio>
 
 #include "diff_funcs.h"
 #include "diff_tree.h"
+#include "general.h"
 #include "tex_funcs.h"
 
 const char *MATH_PHRASES[] =
@@ -38,7 +40,22 @@ void tex_dir_dtor(tex_dir_t *tex_dir) {
 }
 
 void tex_start_code(tex_dir_t *tex_dir) {
-    fprintf(tex_dir->code_file_ptr, "\\documentclass[12pt]{article}\n\\begin{document}\n");
+    fprintf(tex_dir->code_file_ptr, "\\documentclass[12pt]{article}\n");
+    fprintf(tex_dir->code_file_ptr, "\\usepackage{geometry}\n");
+    fprintf(tex_dir->code_file_ptr, "\\usepackage{pgfplots}\n");
+    fprintf(tex_dir->code_file_ptr, "\\pgfplotsset{compat=1.9}\n");
+
+
+    fprintf(tex_dir->code_file_ptr, \
+    "\\geometry{ \n"
+    "a4paper, \n"
+    "top=25mm, \n"
+    "right=15mm, \n"
+    "bottom=25mm, \n"
+    "left=30mm} \n"
+    );
+
+    fprintf(tex_dir->code_file_ptr, "\\begin{document}\n");
 }
 
 void tex_close_code(tex_dir_t *tex_dir) {
@@ -60,12 +77,15 @@ void latex_insert_phrase(tex_dir_t *tex_dir) {
 }
 
 void write_subtree(FILE *stream, bin_tree_elem_t *node, defer_info_t *defer_info) {
-    assert(node != NULL);
+    assert(node);
+    assert(stream);
 
     char bufer[MEDIUM_BUFER_SZ] = {};
     get_node_string(bufer, node);
 
-    printf("height: %lu, root_height: %lf: ", node->subtree_info.height, defer_info->tree_scale_val);
+
+    // printf("height: %lu, root_height: %lf: ", node->subtree_info.height, defer_info->tree_scale_val);
+    printf_grn("POINT!\n");
     if (defer_check(node, defer_info)) {
         printf("YES\n");
         // printf("sz: %lu, graphviz_idx = {%d}\n", node->sub_tree_sz, node->graphviz_idx);
@@ -99,7 +119,8 @@ void write_subtree(FILE *stream, bin_tree_elem_t *node, defer_info_t *defer_info
     }
 
     if (node->data.type == NODE_FUNC) {
-        fprintf(stream, "\\%s(", bufer);
+        // fprintf(stream, "\\%s(", bufer);
+        fprintf(stream, "%s(", bufer);
         write_subtree(stream, node->right, defer_info);
         fprintf(stream, ")");
     }
@@ -134,7 +155,8 @@ void write_subtree(FILE *stream, bin_tree_elem_t *node, defer_info_t *defer_info
                 }
 
                 if (node->data.value.ival == OP_MUL) {
-                    fprintf(stream, " \\cdot ");
+                    // fprintf(stream, " \\cdot ");
+                    fprintf(stream, "*");
                 } else {
                     fprintf(stream, " %s ", bufer);
                 }

@@ -619,7 +619,11 @@ double calc_subtree_scale_val(subtree_info_t info) {
 }
 
 bool defer_check(bin_tree_elem_t *node, defer_info_t *defer_info) {
-    if (!defer_info->defer_state) {
+    if (!defer_info) {
+        return false;
+    }
+
+    if (!defer_info->defer_state) { // FIXME:
         return false;
     }
 

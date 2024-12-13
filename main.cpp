@@ -20,7 +20,7 @@ const char DOT_DIR_PATH[] = "./logs";
 const char LOG_FILE_PATH[] = "./logs/log.html";
 const char DOT_FILE_NAME[] = "graph.dot";
 const char DOT_IMG_NAME[] = "gr_img.png";
-const char EXPRESSION_FILE_PATH[] = "./expression.txt";
+const char EXPRESSION_FILE_PATH[] = "./expression2.txt";
 
 bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     assert(node != NULL);
@@ -87,6 +87,29 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     return new_node;
 }
 
+void tex_make_plot(tex_dir_t *tex_dir, bin_tree_elem_t *root) {
+    assert(root);
+    assert(tex_dir);
+    assert(tex_dir->code_file_ptr);
+
+    fprintf(tex_dir->code_file_ptr,
+    "\\begin{tikzpicture}\n"
+    "\\begin{axis}[\n"
+    "    title = SuperPlot,\n"
+    "    xlabel = {$x$},\n"
+    "    ylabel = {$y$},\n"
+    "]\n"
+    "\\addplot[blue] {");
+
+    // fprintf(tex_dir->code_file_ptr, "x * x");
+    write_subtree(tex_dir->code_file_ptr, root, {});
+
+    fprintf(tex_dir->code_file_ptr,
+    "};\n"
+    "\\end{axis}\n"
+    "\\end{tikzpicture}\n"
+    );
+}
 int main() {
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
     // str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
@@ -116,9 +139,10 @@ int main() {
         parsing_block_t data = {0, text.str_ptr, 0, token_list, &tree, &dot_code, &storage};
         lex_scanner(&data);
         tree.root = get_G(&data);
-
-
         collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, {});
+        tex_make_plot(&tex_dir, tree.root);
+
+
 
         latex_insert_phrase(&tex_dir);
 
@@ -129,6 +153,7 @@ int main() {
         convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
         collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, defer_info);
+
         FREE(text.str_ptr); // FIXME:
         text = {NULL, 0};
         bin_tree_dtor(&tree);

@@ -1,36 +1,28 @@
 \documentclass[12pt]{article}
+\usepackage{geometry}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.9}
+\geometry{ 
+a4paper, 
+top=25mm, 
+right=15mm, 
+bottom=25mm, 
+left=30mm} 
 \begin{document}
 \section{introductory work to the Minecraft clan "Matanists"}
 \subsection{differentiate expression}
-\textbf{Solution}
-$$x \cdot x \cdot x$$ 
+$$sin(x)*cos(x)*5 + 4*1 + ln(x)*ln(x)*1*1$$ 
+\begin{tikzpicture}
+\begin{axis}[
+    title = SuperPlot,
+    xlabel = {$x$},
+    ylabel = {$y$},
+]
+\addplot[blue] {sin(x)*cos(x)*5 + 4*1 + ln(x)*ln(x)*1*1};
+\end{axis}
+\end{tikzpicture}
 Obviously \\ 
-$$x + x \cdot x + x \cdot x$$ 
-\subsection{differentiate expression}
-$$\frac{\sin(x) \cdot \cos(x)}{5 + 4 \cdot 1 + \ln(x) \cdot \ln(x) \cdot 1 \cdot 1}$$ 
-Obviously \\ 
-$$\frac{A0 - A1}{A2}$$ 
-A0 = $\cos(x) \cdot \cos(x) + (-1) \cdot \sin(x) \cdot \sin(x) \cdot 9 + \ln(x) \cdot \ln(x)$ \\ 
-A1 = $\sin(x) \cdot \cos(x) \cdot \frac{1}{x} \cdot \ln(x) + \frac{1}{x} \cdot \ln(x)$ \\ 
-A2 = $9 + \ln(x) \cdot \ln(x) \cdot 9 + \ln(x) \cdot \ln(x)$ \\ 
-\subsection{differentiate expression}
-$$\frac{\frac{\sin(x) \cdot \cos(x)}{5 + 4 \cdot 1 + \ln(x) \cdot \ln(x) \cdot 1 \cdot 1}}{\cos(x)} \cdot \ln(\frac{\frac{\frac{\cos(x)}{x}}{x}}{x})$$ 
-Every Soviet schoolchild understands \\ 
-$$A0 \cdot \ln(\frac{\frac{\frac{\cos(x)}{x}}{x}}{x}) + \frac{A1}{x \cdot x} \cdot \frac{1}{\frac{\frac{\frac{\cos(x)}{x}}{x}}{x}} \cdot \frac{\frac{\sin(x) \cdot \cos(x)}{9 + \ln(x) \cdot \ln(x)}}{\cos(x)}$$ 
-A0 = $\frac{A2 \cdot \cos(x) - A3}{\cos(x) \cdot \cos(x)}$ \\ 
-A3 = $\frac{\sin(x) \cdot \cos(x)}{9 + \ln(x) \cdot \ln(x)} \cdot (-1) \cdot \sin(x)$ \\ 
-\subsection{differentiate expression}
-$$\frac{\frac{\frac{\frac{\frac{\frac{\frac{\frac{\frac{x}{x}}{x}}{x}}{x}}{x}}{x}}{x}}{x}}{x} + \frac{\frac{\frac{\frac{\frac{\cos(x)}{\sin(x)}}{\cos(x)}}{\ln(x)}}{\cos(x)}}{\sin(x)}$$ 
-Obviously \\ 
-$$\frac{\frac{A0 - \frac{\frac{\frac{\frac{\frac{\frac{\frac{x}{x}}{x}}{x}}{x}}{x}}{x}}{x}}{x \cdot x} \cdot x - \frac{\frac{\frac{\frac{\frac{\frac{\frac{\frac{x}{x}}{x}}{x}}{x}}{x}}{x}}{x}}{x}}{x \cdot x} + A1$$ 
-A0 = $\frac{\frac{A2}{x \cdot x} \cdot x - \frac{\frac{\frac{\frac{\frac{\frac{x}{x}}{x}}{x}}{x}}{x}}{x}}{x \cdot x} \cdot x$ \\ 
-A1 = $\frac{\frac{A3}{\cos(x) \cdot \cos(x)} \cdot \sin(x) - \frac{\frac{\frac{\frac{\cos(x)}{\sin(x)}}{\cos(x)}}{\ln(x)}}{\cos(x)} \cdot \cos(x)}{\sin(x) \cdot \sin(x)}$ \\ 
-\subsection{differentiate expression}
-$$\sin(x) \cdot \ln(x) \cdot \cos(x) + \sin(x) \cdot \ln(x) \cdot \cos(x) + \sin(x) \cdot \ln(x) \cdot \cos(x) + \sin(x) \cdot \ln(x) \cdot \cos(x) + \sin(x) \cdot \ln(x) \cdot \cos(x) + \sin(x) \cdot \ln(x) \cdot \cos(x)$$ 
-It's not hard to notice \\ 
-$$A0 + A1 + A2 + A3$$ 
-A0 = $A4 + A5 + A6$ \\ 
-A5 = $\cos(x) \cdot \ln(x) + \frac{1}{x} \cdot \sin(x) \cdot \cos(x) + (-1) \cdot \sin(x) \cdot \sin(x) \cdot \ln(x)$ \\ 
-A6 = $\cos(x) \cdot \ln(x) + \frac{1}{x} \cdot \sin(x) \cdot \cos(x) + (-1) \cdot \sin(x) \cdot \sin(x) \cdot \ln(x)$ \\ 
-A3 = $\cos(x) \cdot \ln(x) + \frac{1}{x} \cdot \sin(x) \cdot \cos(x) + (-1) \cdot \sin(x) \cdot \sin(x) \cdot \ln(x)$ \\ 
+$$A0*9 + ln(x)*ln(x) + A1$$ 
+A0 = $cos(x)*cos(x) + (-1)*sin(x)*sin(x)$ \\ 
+A1 = $\frac{1}{x}*ln(x) + \frac{1}{x}*ln(x)*sin(x)*cos(x)$ \\ 
 \end{document}

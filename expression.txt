@@ -10,3 +10,5 @@ sin(x) * cos(x) / (5 + 4 * 1 + ln(x) * ln(x) * 1 * 1) / cos(x) * ln(cos(x) / x /
 x / x / x / x / x / x / x / x / x / x + cos(x) / sin(x) / cos(x) / ln(x) / cos(x) / sin(x)
 !\subsection{differentiate expression}
 sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x) + sin(x) * ln(x) * cos(x)
+!sfdjkfjsdfjsd
+x + x * ln(x)

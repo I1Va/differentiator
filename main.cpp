@@ -20,7 +20,7 @@ const char DOT_DIR_PATH[] = "./logs";
 const char LOG_FILE_PATH[] = "./logs/log.html";
 const char DOT_FILE_NAME[] = "graph.dot";
 const char DOT_IMG_NAME[] = "gr_img.png";
-const char EXPRESSION_FILE_PATH[] = "./expression2.txt";
+const char EXPRESSION_FILE_PATH[] = "./expression.txt";
 
 bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     assert(node != NULL);
@@ -87,8 +87,7 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     return new_node;
 }
 
-void tex_make_plot(tex_dir_t *tex_dir, bin_tree_elem_t *root) {
-    assert(root);
+void tex_start_plot(tex_dir_t *tex_dir) {
     assert(tex_dir);
     assert(tex_dir->code_file_ptr);
 
@@ -99,18 +98,41 @@ void tex_make_plot(tex_dir_t *tex_dir, bin_tree_elem_t *root) {
     "    xlabel = {$x$},\n"
     "    ylabel = {$y$},\n"
     "]\n"
-    "\\addplot[blue] {");
+    );
+}
+
+void tex_add_to_plot(tex_dir_t *tex_dir, bin_tree_elem_t *root, const char color[]) {
+    fprintf(tex_dir->code_file_ptr, "\\addplot[%s] {", color);
 
     // fprintf(tex_dir->code_file_ptr, "x * x");
-    write_subtree(tex_dir->code_file_ptr, root, {});
+    write_subtree(tex_dir->code_file_ptr, root, {}, {false, false});
 
+    fprintf(tex_dir->code_file_ptr, "};\n");
+}
+
+void tex_close_plot(tex_dir_t *tex_dir) {
     fprintf(tex_dir->code_file_ptr,
-    "};\n"
     "\\end{axis}\n"
     "\\end{tikzpicture}\n"
     );
 }
+
+void tex_make_taylor(tex_dir_t *tex_dir, bin_tree_elem_t *root, const size_t n) {
+    bin_tree_elem_t *cur_derivative = get_tree_copy(root);
+
+    for (size_t i = 0; i <= n; i++) {
+        write_subtree(tex_dir->code_file_ptr, cur_derivative, {}, {true, true});
+        fprintf(tex_dir->code_file_ptr, " + ");
+        differentiate(cur_derivative);
+        cur_derivative = neutrals_remove_diff_tree(cur_derivative);
+        cur_derivative = constant_convolution_diff_tree(cur_derivative);
+    }
+}
+
 int main() {
+    // TODO: пошаговое дифференцирование
+    // TODO: рефакторинг
+
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
     // str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
     dot_code_t dot_code = {}; dot_code_t_ctor(&dot_code, LIST_DOT_CODE_PARS);
@@ -128,7 +150,6 @@ int main() {
         CLEAR_MEMORY(exit_mark);
     }
 
-
     while (getline(&text.str_ptr, &text.len, expression_file) != -1) { // FIXME:
         if (text.str_ptr[0] == '!') {
             fprintf(tex_dir.code_file_ptr, "%s", text.str_ptr + 1);
@@ -139,20 +160,23 @@ int main() {
         parsing_block_t data = {0, text.str_ptr, 0, token_list, &tree, &dot_code, &storage};
         lex_scanner(&data);
         tree.root = get_G(&data);
-        collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, {});
-        tex_make_plot(&tex_dir, tree.root);
-
+        collect_tree_info(tree.root); make_tex_of_subtree(&tex_dir, tree.root, {}, {true, true});
+        tex_start_plot(&tex_dir);
 
 
         latex_insert_phrase(&tex_dir);
 
+        tex_add_to_plot(&tex_dir, tree.root, "blue");
         tree.root = differentiate(tree.root);
         tree.root = constant_convolution_diff_tree(tree.root);
         tree.root = neutrals_remove_diff_tree(tree.root);
+        tex_add_to_plot(&tex_dir, tree.root, "red");
+        tex_close_plot(&tex_dir);
+
 
         convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
-        collect_tree_info(tree.root); write_expression_to_tex(&tex_dir, tree.root, defer_info);
+        collect_tree_info(tree.root); make_tex_of_subtree(&tex_dir, tree.root, defer_info, {true, true});
 
         FREE(text.str_ptr); // FIXME:
         text = {NULL, 0};

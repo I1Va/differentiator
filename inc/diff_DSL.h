@@ -8,5 +8,7 @@
 #define _VAR()          bin_tree_create_node(NULL, NULL, {NODE_VAR,  {0     , 0ll, 0.0, NULL}})
 #define _NUM(val)       bin_tree_create_node(NULL, NULL, {NODE_NUM,  {0     , val, 0.0, NULL}})
 #define _FUNC(n2, name) bin_tree_create_node(NULL, n2,   {NODE_FUNC, {0     , 0ll, 0.0, name}})
+#define _POW(n1, n2)    bin_tree_create_node(n1, n2,     {NODE_OP,   {OP_POW, 0ll, 0.0, NULL}})
+#define _CONST(name)    bin_tree_create_node(NULL, NULL, {NODE_NUM,  {0, 0ll, 0.0, name}})
 
 #endif // DIFF_DSL_H

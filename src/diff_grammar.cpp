@@ -122,7 +122,6 @@ void lex_scanner(parsing_block_t *data) {
     token_list_dump(stdout, data->token_list, token_idx);
 }
 
-
 bin_tree_elem_t *get_G(parsing_block_t *data) {
     assert(data != NULL);
 
@@ -164,25 +163,39 @@ bin_tree_elem_t *get_T(parsing_block_t *data) {
 
     token_t *tl = data->token_list;
     int *tp = &(data->tp);
-    bin_tree_elem_t *val = get_P(data);
+    bin_tree_elem_t *val = get_pow(data);
 
     while (tl[*tp].token_type == LEX_MUL || tl[*tp].token_type == LEX_DIV) {
         lexemtype op = tl[*tp].token_type;
         (*tp)++;
-        bin_tree_elem_t *val2 = get_P(data);
+        bin_tree_elem_t *val2 = get_pow(data);
         if (op == LEX_MUL) {
             val = _MUL(val, val2);
         } else {
             val = _DIV(val, val2);
         }
-        printf("type: (%d)\n", tl[*tp].token_type);
+        // printf("type: (%d)\n", tl[*tp].token_type);
     }
 
     return val;
 }
 
-// there is should be pow grammar rule
+bin_tree_elem_t *get_pow(parsing_block_t *data) {
+    token_t *tl = data->token_list;
+    int *tp = &(data->tp);
 
+    bin_tree_elem_t *left = get_P(data);
+
+    if (tl[*tp].token_type == LEX_POW) {
+        (*tp)++;
+
+        bin_tree_elem_t *right = get_pow(data);
+
+        left = _POW(left, right);
+    }
+
+    return left;
+}
 
 bin_tree_elem_t *get_P(parsing_block_t *data) {
     assert(data != NULL);

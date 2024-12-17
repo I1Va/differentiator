@@ -57,6 +57,7 @@ enum opers {
     OP_DIV = 1,
     OP_MUL = 2,
     OP_SUB = 3,
+    OP_POW = 4,
 };
 
 void get_node_type(enum node_types *type, long double *value, char *name);

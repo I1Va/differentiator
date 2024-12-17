@@ -20,7 +20,7 @@ const char DOT_DIR_PATH[] = "./logs";
 const char LOG_FILE_PATH[] = "./logs/log.html";
 const char DOT_FILE_NAME[] = "graph.dot";
 const char DOT_IMG_NAME[] = "gr_img.png";
-const char EXPRESSION_FILE_PATH[] = "./expression.txt";
+const char EXPRESSION_FILE_PATH[] = "./expression2.txt";
 
 bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     assert(node != NULL);
@@ -28,10 +28,10 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
     bin_tree_elem_t *new_node  = NULL;
 
     if (node->data.type == NODE_VAR) {
-        FREE(node);
+        // FREE(node);
         return _NUM(1);
     } else if (node->data.type == NODE_NUM) {
-        FREE(node);
+        // FREE(node);
         return _NUM(0);
     } else if (node->data.type == NODE_OP) {
         if (node->data.value.ival == OP_ADD) {
@@ -61,6 +61,22 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
                 _SUB(_MUL(left_diff, node->right), _MUL(node->left, right_diff)),
                 _MUL(get_tree_copy(node->right), get_tree_copy(node->right))
             );
+        } else if (node->data.value.ival == OP_POW) {
+            bin_tree_elem_t *left_copy1 = get_tree_copy(node->left);
+            bin_tree_elem_t *right_copy1 = get_tree_copy(node->right);
+            bin_tree_elem_t *left_copy2 = get_tree_copy(node->left);
+            bin_tree_elem_t *right_copy2 = get_tree_copy(node->right);
+            bin_tree_elem_t *left_copy3 = get_tree_copy(node->left);
+
+            bin_tree_elem_t *left_diff = differentiate(node->left);
+            bin_tree_elem_t *right_diff = differentiate(node->right);
+            bin_tree_elem_t *rpart = _ADD(_MUL(right_diff, _FUNC(left_copy3, "ln")),  _MUL(left_diff, _DIV(right_copy2, left_copy2)));
+            bin_tree_elem_t *lpart = _POW(_CONST("e"), _MUL(right_copy1, _FUNC(left_copy1, "ln")));
+
+            return _MUL(lpart, rpart);
+        } else {
+            debug("unknown_op : {%d}", node->data.value.ival);
+            return NULL;
         }
     } else if (node->data.type == NODE_FUNC) {
         if (strcmp(node->data.value.sval, "sin") == 0) {
@@ -83,7 +99,7 @@ bin_tree_elem_t *differentiate(bin_tree_elem_t *node) {
         }
     }
 
-    FREE(node);
+    // FREE(node);
     return new_node;
 }
 
@@ -93,11 +109,11 @@ void tex_start_plot(tex_dir_t *tex_dir) {
 
     fprintf(tex_dir->code_file_ptr,
     "\\begin{tikzpicture}\n"
-    "\\begin{axis}[\n"
+    "\\begin{axis}{\n"
     "    title = SuperPlot,\n"
     "    xlabel = {$x$},\n"
     "    ylabel = {$y$},\n"
-    "]\n"
+    "}\n \\\\"
     );
 }
 
@@ -113,20 +129,24 @@ void tex_add_to_plot(tex_dir_t *tex_dir, bin_tree_elem_t *root, const char color
 void tex_close_plot(tex_dir_t *tex_dir) {
     fprintf(tex_dir->code_file_ptr,
     "\\end{axis}\n"
-    "\\end{tikzpicture}\n"
+    "\\end{tikzpicture}\n \\\\"
     );
 }
 
 void tex_make_taylor(tex_dir_t *tex_dir, bin_tree_elem_t *root, const size_t n) {
     bin_tree_elem_t *cur_derivative = get_tree_copy(root);
 
+    fprintf(tex_dir->code_file_ptr, "$");
     for (size_t i = 0; i <= n; i++) {
         write_subtree(tex_dir->code_file_ptr, cur_derivative, {}, {true, true});
         fprintf(tex_dir->code_file_ptr, " + ");
-        differentiate(cur_derivative);
+
+        cur_derivative = differentiate(cur_derivative);
+
         cur_derivative = neutrals_remove_diff_tree(cur_derivative);
         cur_derivative = constant_convolution_diff_tree(cur_derivative);
     }
+    fprintf(tex_dir->code_file_ptr, "$");
 }
 
 int main() {
@@ -134,7 +154,7 @@ int main() {
     // TODO: рефакторинг
 
     str_storage_t *storage = str_storage_t_ctor(CHUNK_SIZE);
-    // str_t text = read_text_from_file(EXPRESSION_FILE_PATH);
+
     dot_code_t dot_code = {}; dot_code_t_ctor(&dot_code, LIST_DOT_CODE_PARS);
     dot_dir_t dot_dir = {}; dot_dir_ctor(&dot_dir, DOT_DIR_PATH, DOT_FILE_NAME, DOT_IMG_NAME);
 
@@ -144,11 +164,14 @@ int main() {
     tex_start_code(&tex_dir);
     token_t token_list[TOKEN_LIST_MAX_SZ] = {};
     str_t text = {NULL, 0};
+    bool first = true;
     FILE *expression_file = fopen(EXPRESSION_FILE_PATH, "r");
     if (expression_file == NULL) {
         debug("file '%s' open failed", EXPRESSION_FILE_PATH);
-        CLEAR_MEMORY(exit_mark);
+        return EXIT_FAILURE;
+        // CLEAR_MEMORY(exit_mark);
     }
+
 
     while (getline(&text.str_ptr, &text.len, expression_file) != -1) { // FIXME:
         if (text.str_ptr[0] == '!') {
@@ -161,18 +184,21 @@ int main() {
         lex_scanner(&data);
         tree.root = get_G(&data);
         collect_tree_info(tree.root); make_tex_of_subtree(&tex_dir, tree.root, {}, {true, true});
-        tex_start_plot(&tex_dir);
+        // tex_start_plot(&tex_dir);
 
 
         latex_insert_phrase(&tex_dir);
 
-        tex_add_to_plot(&tex_dir, tree.root, "blue");
+        // tex_add_to_plot(&tex_dir, tree.root, "blue");
         tree.root = differentiate(tree.root);
         tree.root = constant_convolution_diff_tree(tree.root);
         tree.root = neutrals_remove_diff_tree(tree.root);
-        tex_add_to_plot(&tex_dir, tree.root, "red");
-        tex_close_plot(&tex_dir);
+        // tex_add_to_plot(&tex_dir, tree.root, "red");
+        // tex_close_plot(&tex_dir);
 
+        // if (first) {
+        //     tex_make_taylor(&tex_dir, tree.root, 4);
+        // }
 
         convert_subtree_to_dot(tree.root, &dot_code, &storage);
 
@@ -181,7 +207,9 @@ int main() {
         FREE(text.str_ptr); // FIXME:
         text = {NULL, 0};
         bin_tree_dtor(&tree);
+        first = false;
     }
+
 
     tex_generate_pdf(&tex_dir);
     dot_code_render(&dot_dir, &dot_code);

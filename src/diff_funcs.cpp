@@ -50,11 +50,16 @@ void get_node_string(char *bufer, bin_tree_elem_t *node) {
             case OP_DIV: res = '/'; break;
             case OP_MUL: res = '*'; break;
             case OP_SUB: res = '-'; break;
+            case OP_POW: res = '^'; break;
             default: res = '?'; break;
         }
         snprintf(bufer, BUFSIZ, "%c", res);
     } else if (node->data.type == NODE_NUM) {
-        snprintf(bufer, BUFSIZ, "%Ld", node->data.value.lval);
+        if (node->data.value.sval) {
+            snprintf(bufer, BUFSIZ, "%s", node->data.value.sval);
+        } else {
+            snprintf(bufer, BUFSIZ, "%Ld", node->data.value.lval);
+        }
     } else if (node->data.type == NODE_VAR) {
         snprintf(bufer, BUFSIZ, "x");
     } else if (node->data.type == NODE_FUNC) {
@@ -487,6 +492,10 @@ bin_tree_elem_t *neutrals_remove_diff_tree(bin_tree_elem_t *node) {
             return new_node;
         }
 
+        if (node->data.value.ival == OP_POW) {
+            new_node = node;
+            return new_node;
+        }
     }
 
     debug("unknown node_type : {%d}", node->data.type);
@@ -520,6 +529,17 @@ bin_tree_elem_t *roll_up_null_mult(bin_tree_elem_t *node) {
         }
     }
 
+    if (node->data.type == NODE_OP && node->data.value.ival == OP_POW) {
+        bool left_null_state = node->left->data.type == NODE_NUM && node->left->data.value.lval == 0;
+        if (left_null_state) {
+            bin_tree_elem_t *new_node = _NUM(0);
+            new_node->constant_state = true;
+
+            sub_tree_dtor(node);
+            return new_node;
+        }
+    }
+
     return node;
 }
 
@@ -531,6 +551,10 @@ bin_tree_elem_t *constant_convolution_diff_tree(bin_tree_elem_t *node) {
         return node;
     }
     if (node->data.type == NODE_VAR) {
+        return node;
+    }
+
+    if (node->data.type == NODE_OP && node->data.value.ival == OP_POW) {
         return node;
     }
 

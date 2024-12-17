@@ -146,6 +146,16 @@ void write_subtree(FILE *stream, bin_tree_elem_t *node, defer_info_t *defer_info
                 }
                 fprintf(stream, ")");
             }
+        } else if (node->data.value.ival == OP_POW) {
+            fprintf(stream, "(");
+            if (node->left) {
+                write_subtree(stream, node->left, defer_info, tex_info);
+            }
+            fprintf(stream, ")^{");
+            if (node->right) {
+                write_subtree(stream, node->right, defer_info, tex_info);
+            }
+            fprintf(stream, "}");
         } else {
             bool left_const_state = (node->left->data.type == NODE_NUM);
             bool right_const_state = (node->right->data.type == NODE_NUM);

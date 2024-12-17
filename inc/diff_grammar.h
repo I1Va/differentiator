@@ -67,5 +67,6 @@ bin_tree_elem_t *get_P(parsing_block_t *data);
 bin_tree_elem_t *get_N(parsing_block_t *data);
 bin_tree_elem_t *get_V(parsing_block_t *data);
 bin_tree_elem_t *get_F(parsing_block_t *data);
+bin_tree_elem_t *get_pow(parsing_block_t *data);
 
 #endif // DIFF_GRAMMAR_H
